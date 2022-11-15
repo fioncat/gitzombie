@@ -42,9 +42,17 @@ func AttachRepository(remote *Remote, name, path string) (*Repository, error) {
 	}
 	err := repo.normalize()
 	if err != nil {
-		return nil, errors.Warp(err, "normalize repository")
+		return nil, errors.Trace(err, "normalize repository")
 	}
 	return repo, nil
+}
+
+func (repo *Repository) Group() string {
+	return repo.group
+}
+
+func (repo *Repository) Base() string {
+	return repo.base
 }
 
 func (repo *Repository) normalize() error {
@@ -80,7 +88,7 @@ func NewRepositoryStorage() (*RepositoryStorage, error) {
 	}
 	err := s.init()
 	if err != nil {
-		return nil, errors.Warp(err, "init repository storage")
+		return nil, errors.Trace(err, "init repository storage")
 	}
 	return s, nil
 }
@@ -93,7 +101,7 @@ func (s *RepositoryStorage) init() error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return errors.Warp(err, "open data file")
+		return errors.Trace(err, "open data file")
 	}
 	defer file.Close()
 
@@ -194,7 +202,7 @@ func (s *RepositoryStorage) Close() error {
 	path := config.LocalDir("data")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
-		return errors.Warp(err, "open data file")
+		return errors.Trace(err, "open data file")
 	}
 	defer file.Close()
 
@@ -233,7 +241,7 @@ func (s *RepositoryStorage) sort() {
 func (s *RepositoryStorage) Add(repo *Repository) error {
 	err := repo.normalize()
 	if err != nil {
-		return errors.Warp(err, "normalize repo")
+		return errors.Trace(err, "normalize repo")
 	}
 
 	s.lock.Lock()
@@ -282,14 +290,10 @@ func (s *RepositoryStorage) Delete(repo *Repository) {
 	delete(s.pathIndex, repo.Path)
 }
 
-func (s *RepositoryStorage) GetByName(remote, name string) (*Repository, error) {
+func (s *RepositoryStorage) GetByName(remote, name string) *Repository {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	repo := s.get(remote, name)
-	if repo == nil {
-		return nil, fmt.Errorf("cannot find repo %s:%s", remote, name)
-	}
-	return repo, nil
+	return s.get(remote, name)
 }
 
 func (s *RepositoryStorage) GetByPath(path string) (*Repository, error) {

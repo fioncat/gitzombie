@@ -13,6 +13,11 @@ import (
 // colorPlaceholder is the color placeholder "color|**|" regex object.
 var colorPlaceholder = regexp.MustCompile(`(cyan|blue|red|yellow|magenta|green)\|[^\|]+\|`)
 
+func Color(s string, args ...any) string {
+	msg := fmt.Sprintf(s, args...)
+	return colorString(msg)
+}
+
 func colorString(s string) string {
 	return colorPlaceholder.ReplaceAllStringFunc(s, func(ph string) string {
 		tmp := strings.Split(ph, "|")

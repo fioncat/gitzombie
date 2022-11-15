@@ -47,19 +47,19 @@ func GetRemote(name string) (*Remote, error) {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("cannot find remote %s", name)
 		}
-		return nil, errors.Warp(err, "read remote file")
+		return nil, errors.Trace(err, "read remote file")
 	}
 
 	var remote Remote
 	err = toml.Unmarshal(data, &remote)
 	if err != nil {
-		return nil, errors.Warp(err, "parse remote file")
+		return nil, errors.Trace(err, "parse remote file")
 	}
 	remote.Name = name
 
 	err = validate.Do(&remote)
 	if err != nil {
-		return nil, errors.Warp(err, "validate remote")
+		return nil, errors.Trace(err, "validate remote")
 	}
 
 	return &remote, nil
@@ -72,7 +72,7 @@ func ListRemoteNames() ([]string, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, errors.Warp(err, "read remotes")
+		return nil, errors.Trace(err, "read remotes")
 	}
 	names := make([]string, 0, len(files))
 	for _, file := range files {
@@ -89,4 +89,40 @@ func ListRemoteNames() ([]string, error) {
 		}
 	}
 	return names, nil
+}
+
+func (r *Remote) GetCloneURL(repo *Repository) (string, error) {
+	protocol := r.Protocol
+	group := r.matchGroup(repo)
+	if group != nil && group.Protocol != "" {
+		protocol = group.Protocol
+	}
+	switch protocol {
+	case "https":
+		return fmt.Sprintf("https://%s/%s.git", r.Host, repo.Name), nil
+	case "ssh":
+		return fmt.Sprintf("git@%s:%s.git", r.Host, repo.Name), nil
+	}
+	return "", fmt.Errorf("invalid protocol %s", protocol)
+}
+
+func (r *Remote) GetUserEmail(repo *Repository) (string, string) {
+	user, email := r.User, r.Email
+	group := r.matchGroup(repo)
+	if group.User != "" {
+		user = group.User
+	}
+	if group.Email != "" {
+		email = group.Email
+	}
+	return user, email
+}
+
+func (r *Remote) matchGroup(repo *Repository) *RemoteGroup {
+	for _, group := range r.Groups {
+		if repo.Group() == group.Name {
+			return group
+		}
+	}
+	return nil
 }

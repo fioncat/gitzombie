@@ -19,7 +19,7 @@ type Extra interface {
 	Extra()
 }
 
-func Warp(err error, op string, args ...any) error {
+func Trace(err error, op string, args ...any) error {
 	op = fmt.Sprintf(op, args...)
 	if eo, ok := err.(*Error); ok {
 		eo.ops = append(eo.ops, op)
