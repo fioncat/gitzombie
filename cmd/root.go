@@ -44,7 +44,7 @@ var initZsh = &cobra.Command{
 }
 
 var initBash = &cobra.Command{
-	Use: "bash",
+	Use:   "bash",
 	Short: "Print init scripts, you can add `source <(gitzombie init bash)` to your profile",
 
 	RunE: func(_ *cobra.Command, _ []string) error {

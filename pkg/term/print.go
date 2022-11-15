@@ -63,7 +63,6 @@ func Warn(msg string, args ...any) {
 	Print(msg)
 }
 
-
 func PrintError(err error) {
 	msg := fmt.Sprintf("red|fatal:| %v", err)
 	Print(msg)
