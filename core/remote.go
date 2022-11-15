@@ -109,11 +109,13 @@ func (r *Remote) GetCloneURL(repo *Repository) (string, error) {
 func (r *Remote) GetUserEmail(repo *Repository) (string, string) {
 	user, email := r.User, r.Email
 	group := r.matchGroup(repo)
-	if group.User != "" {
-		user = group.User
-	}
-	if group.Email != "" {
-		email = group.Email
+	if group != nil {
+		if group.User != "" {
+			user = group.User
+		}
+		if group.Email != "" {
+			email = group.Email
+		}
 	}
 	return user, email
 }
