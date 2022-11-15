@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/fioncat/gitzombie/pkg/errors"
 )
 
 // colorPlaceholder is the color placeholder "color|**|" regex object.
@@ -51,16 +52,17 @@ func Print(msg string, args ...any) {
 	fmt.Fprintln(os.Stderr, colorString(msg))
 }
 
-type extraError interface {
-	Extra()
+func Warn(msg string, args ...any) {
+	msg = fmt.Sprintf(msg, args...)
+	msg = fmt.Sprintf("yellow|WARN: %s|", msg)
+	Print(msg)
 }
 
-// PrintError prints error to stderr. If error has Extra() function, it
-// will be called after printing.
+
 func PrintError(err error) {
 	msg := fmt.Sprintf("red|fatal:| %v", err)
 	Print(msg)
-	if ext, ok := err.(extraError); ok {
+	if ext, ok := err.(errors.Extra); ok {
 		ext.Extra()
 	}
 }

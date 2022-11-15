@@ -88,7 +88,10 @@ type Error struct {
 }
 
 func (err *Error) Error() string {
-	return "failed to validate configuration:"
+	if len(err.Fields) == 1 {
+		return "found invalid field:"
+	}
+	return "found invalid fields:"
 }
 
 func (err *Error) Extra() {
