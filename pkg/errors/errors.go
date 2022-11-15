@@ -20,6 +20,9 @@ type Extra interface {
 }
 
 func Trace(err error, op string, args ...any) error {
+	if err == nil {
+		return nil
+	}
 	op = fmt.Sprintf(op, args...)
 	if eo, ok := err.(*Error); ok {
 		eo.ops = append(eo.ops, op)

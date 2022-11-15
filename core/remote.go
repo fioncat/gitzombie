@@ -39,8 +39,8 @@ type RemoteGroup struct {
 }
 
 func GetRemote(name string) (*Remote, error) {
-	name = fmt.Sprintf("%s.toml", name)
-	path := config.BaseDir("remotes", name)
+	filename := fmt.Sprintf("%s.toml", name)
+	path := config.BaseDir("remotes", filename)
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -59,7 +59,7 @@ func GetRemote(name string) (*Remote, error) {
 
 	err = validate.Do(&remote)
 	if err != nil {
-		return nil, errors.Trace(err, "validate remote")
+		return nil, errors.Trace(err, "validate remote configuration for %s", name)
 	}
 
 	return &remote, nil

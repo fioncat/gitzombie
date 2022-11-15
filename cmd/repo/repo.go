@@ -20,7 +20,7 @@ type App struct{}
 
 func (app *App) Name() string { return "repo" }
 
-func (app *App) BuildContext(args []string) (*Context, error) {
+func (app *App) BuildContext(args common.Args) (*Context, error) {
 	ctx := new(Context)
 	var err error
 	ctx.store, err = core.NewRepositoryStorage()
@@ -28,6 +28,12 @@ func (app *App) BuildContext(args []string) (*Context, error) {
 		return nil, err
 	}
 	return ctx, nil
+}
+
+func (app *App) Ops() []common.Operation[Context] {
+	return []common.Operation[Context]{
+		&Home{},
+	}
 }
 
 func (app *App) Close(ctx *Context) error {
@@ -90,7 +96,7 @@ func ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repository) error 
 	stat, err := os.Stat(repo.Path)
 	switch {
 	case os.IsNotExist(err):
-		term.ConfirmExit("repo %s does not exists, do you want to clone it to %s", repo.FullName(), repo.Path)
+		term.ConfirmExit("repo %s does not exists, do you want to clone it", repo.FullName())
 		err = term.Exec("git", "clone", url, repo.Path)
 		if err != nil {
 			return err
@@ -105,7 +111,6 @@ func ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repository) error 
 		if err != nil {
 			return err
 		}
-
 
 	case err == nil:
 		if !stat.IsDir() {
@@ -124,14 +129,15 @@ func ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repository) error 
 
 type Home struct{}
 
-func (home *Home) Name() []string { return []string{"home", "repo"} }
+func (home *Home) Use() string    { return "repo remote [repo]" }
 func (home *Home) Desc() string   { return "print the home path of a repo" }
+func (home *Home) Action() string { return "home" }
 
 func (home *Home) Prepare(cmd *cobra.Command) {
 	cmd.Args = cobra.RangeArgs(1, 2)
 }
 
-func (home *Home) Handle(ctx *Context, args common.Args) error {
+func (home *Home) Run(ctx *Context, args common.Args) error {
 	remote, err := getRemote(args.Get(0))
 	if err != nil {
 		return err

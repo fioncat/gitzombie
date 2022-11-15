@@ -55,7 +55,7 @@ func ExecCmd(cmds []string, in string, quiet bool) (string, error) {
 	}
 	name := cmds[0]
 	var args []string
-	if len(args) > 1 {
+	if len(cmds) > 1 {
 		args = cmds[1:]
 	}
 
@@ -64,6 +64,8 @@ func ExecCmd(cmds []string, in string, quiet bool) (string, error) {
 		var inBuffer bytes.Buffer
 		inBuffer.WriteString(in)
 		cmd.Stdin = &inBuffer
+	} else {
+		cmd.Stdin = os.Stdin
 	}
 	var outBuffer bytes.Buffer
 	cmd.Stdout = &outBuffer
@@ -95,8 +97,7 @@ type CommandError struct {
 }
 
 func (err *CommandError) Error() string {
-	cmd := strings.Join(err.Cmds, " ")
-	return Color("failed to execute cyan|%s|", cmd)
+	return Color("failed to execute command: %v", err.Err)
 }
 
 func (err *CommandError) Extra() {

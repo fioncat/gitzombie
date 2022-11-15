@@ -44,7 +44,7 @@ func Init() error {
 	initOnce.Do(func() {
 		homeDir, err = os.UserHomeDir()
 		if err != nil {
-			err = errors.Warp(err, "get home dir")
+			err = errors.Trace(err, "get home dir")
 			return
 		}
 
@@ -57,7 +57,7 @@ func Init() error {
 		localDir = filepath.Join(homeDir, ".local", "share", "gitzombie")
 		err = term.EnsureDir(localDir)
 		if err != nil {
-			err = errors.Warp(err, "ensure local dir")
+			err = errors.Trace(err, "ensure local dir")
 			return
 		}
 
@@ -76,18 +76,18 @@ func Init() error {
 			var data []byte
 			data, err = os.ReadFile(configPath)
 			if err != nil {
-				err = errors.Warp(err, "read config file")
+				err = errors.Trace(err, "read config file")
 				return
 			}
 			instance = new(Config)
 			err = toml.Unmarshal(data, instance)
 			if err != nil {
-				err = errors.Warp(err, "parse config file")
+				err = errors.Trace(err, "parse config file")
 				return
 			}
 
 		default:
-			err = errors.Warp(err, "stat config file")
+			err = errors.Trace(err, "stat config file")
 			return
 		}
 		instance.normalize()
