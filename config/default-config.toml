@@ -1,0 +1,6 @@
+workspace = "$HOME/dev/src"
+playground = "$HOME/dev/play"
+
+search_limit = 200
+
+editor = ""
