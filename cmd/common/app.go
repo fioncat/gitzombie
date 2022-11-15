@@ -3,7 +3,12 @@ package common
 import (
 	"fmt"
 
+	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/spf13/cobra"
+)
+
+var (
+	ErrNotGit = errors.New("you are not int a git repository")
 )
 
 type App[Context any] interface {
@@ -27,6 +32,7 @@ var actionMap map[string]*cobra.Command
 func Build[Context any](cmd *cobra.Command, app App[Context]) {
 	ops := app.Ops()
 	for _, op := range ops {
+		op := op
 		appCmd := &cobra.Command{
 			Use:   op.Use(),
 			Short: op.Desc(),

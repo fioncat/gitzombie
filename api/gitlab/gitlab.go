@@ -28,6 +28,8 @@ func New(remote *core.Remote) (api.Provider, error) {
 	return &Provider{cli: cli, remote: remote}, nil
 }
 
+func (p *Provider) Name() string { return "Gitlab" }
+
 func (p *Provider) SearchRepositories(group, query string) ([]*api.Repository, error) {
 	var prjs []*gitlab.Project
 	var err error

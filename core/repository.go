@@ -15,6 +15,16 @@ import (
 	"github.com/fioncat/gitzombie/pkg/term"
 )
 
+func SplitGroup(name string) (string, string) {
+	tmp := strings.Split(name, "/")
+	if len(tmp) <= 1 {
+		return "", name
+	}
+	group := filepath.Join(tmp[:len(tmp)-1]...)
+	base := tmp[len(tmp)-1]
+	return group, base
+}
+
 type Repository struct {
 	Path string
 
@@ -63,8 +73,10 @@ func (repo *Repository) normalize() error {
 	if len(tmp) <= 1 {
 		return fmt.Errorf("invalid repository name %q, missing group", repo.Name)
 	}
-	repo.group = strings.Join(tmp[:len(tmp)-1], "/")
-	repo.base = tmp[len(tmp)-1]
+	repo.group, repo.base = SplitGroup(repo.Name)
+	if repo.group == "" {
+		return fmt.Errorf("invalid repository name %q, missing group", repo.Name)
+	}
 	return nil
 }
 
@@ -79,6 +91,8 @@ type RepositoryStorage struct {
 	pathIndex map[string]*Repository
 
 	lock sync.RWMutex
+
+	readonly bool
 }
 
 func NewRepositoryStorage() (*RepositoryStorage, error) {
@@ -199,6 +213,9 @@ func (s *RepositoryStorage) readError(err error, field string) error {
 }
 
 func (s *RepositoryStorage) Close() error {
+	if s.readonly {
+		return nil
+	}
 	path := config.LocalDir("data")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
@@ -248,11 +265,11 @@ func (s *RepositoryStorage) Add(repo *Repository) error {
 	defer s.lock.Unlock()
 
 	if v := s.get(repo.Remote, repo.Name); v != nil {
-		return fmt.Errorf("repo %s is already exists, no need to add", repo.FullName())
+		return fmt.Errorf("repo %s is already exists", repo.FullName())
 	}
 
 	if v := s.pathIndex[repo.Path]; v != nil {
-		return fmt.Errorf("path %s is already bound to a repository, please use anther path", repo.Path)
+		return fmt.Errorf("path %s is already bound to %s", repo.Path, v.FullName())
 	}
 
 	s.repos = append(s.repos, repo)
@@ -275,11 +292,11 @@ func (s *RepositoryStorage) Delete(repo *Repository) {
 	}
 
 	newRepos := make([]*Repository, 0, len(s.repos)-1)
-	for _, repo := range s.repos {
-		if repo.Remote == repo.Remote && repo.Name == repo.Name {
+	for _, item := range s.repos {
+		if item.Remote == repo.Remote && item.Name == repo.Name {
 			continue
 		}
-		newRepos = append(newRepos, repo)
+		newRepos = append(newRepos, item)
 	}
 	s.repos = newRepos
 
@@ -312,6 +329,10 @@ func (s *RepositoryStorage) get(remote, name string) *Repository {
 		return nil
 	}
 	return repoMap[name]
+}
+
+func (s *RepositoryStorage) ReadOnly() {
+	s.readonly = true
 }
 
 type readRepositoryError struct {

@@ -204,3 +204,4 @@ if [ "$funcstack[1]" = "_gitzombie" ]; then
     _gitzombie
 fi
 
+compdef _gitzombie gitzombie

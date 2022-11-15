@@ -108,7 +108,7 @@ func (err *CommandError) Extra() {
 
 func PrintSearch(msg string, args ...any) {
 	msg = fmt.Sprintf(msg, args...)
-	Print("=> green|%s|", msg)
+	Print("=> blue|%s|", msg)
 }
 
 func PrintCmd(args []string) {

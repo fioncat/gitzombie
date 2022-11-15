@@ -38,6 +38,8 @@ func New(remote *core.Remote) (api.Provider, error) {
 	}, nil
 }
 
+func (p *Provider) Name() string { return "Github" }
+
 func (p *Provider) SearchRepositories(group, query string) ([]*api.Repository, error) {
 	if group != "" {
 		return p.searchInGroup(group, query)
