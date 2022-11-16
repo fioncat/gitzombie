@@ -17,7 +17,7 @@ type Sync struct {
 
 	tasks []struct {
 		branch string
-		cmds   [][]string
+		cmd    []string
 		desc   string
 	}
 }
@@ -55,42 +55,38 @@ func (b *Sync) Run(_ *struct{}, args common.Args) error {
 	term.Print("main branch is magenta|%s|", mainBranch)
 	backupBranch := mainBranch
 
+	var cur string
 	for _, branch := range branches {
 		if branch.Current {
 			if b.noDelete || branch.RemoteStatus != git.RemoteStatusGone {
 				backupBranch = branch.Name
 			}
+			cur = branch.Name
 		}
 		var desc string
-		var ops [][]string
+		var cmd []string
 		var tar string
 		switch branch.RemoteStatus {
 		case git.RemoteStatusAhead:
 			tar = branch.Name
 			desc = "green|push|  "
-			ops = [][]string{
-				{"checkout", branch.Name},
-				{"push"},
-			}
+			cmd = []string{"push"}
 
 		case git.RemoteStatusBehind:
 			tar = branch.Name
 			desc = "green|pull|  "
-			ops = [][]string{
-				{"checkout", branch.Name},
-				{"pull"},
-			}
+			cmd = []string{"pull"}
 
 		case git.RemoteStatusGone:
 			if b.noDelete {
 				continue
 			}
+			if branch.Name == mainBranch {
+				continue
+			}
 			tar = mainBranch
 			desc = "red|delete|"
-			ops = [][]string{
-				{"checkout", mainBranch},
-				{"branch", "-D", branch.Name},
-			}
+			cmd = []string{"branch", "-D", branch.Name}
 
 		default:
 			continue
@@ -98,11 +94,11 @@ func (b *Sync) Run(_ *struct{}, args common.Args) error {
 		desc = fmt.Sprintf("  * %s %s", desc, branch.Name)
 		b.tasks = append(b.tasks, struct {
 			branch string
-			cmds   [][]string
+			cmd    []string
 			desc   string
 		}{
 			branch: tar,
-			cmds:   ops,
+			cmd:    cmd,
 			desc:   desc,
 		})
 	}
@@ -120,15 +116,15 @@ func (b *Sync) Run(_ *struct{}, args common.Args) error {
 	}
 	term.ConfirmExit("continue")
 
-	var cur string
 	for _, task := range b.tasks {
-		for _, cmds := range task.cmds {
-			err = git.Exec(cmds, git.QuietOutput)
-			if err != nil {
-				return err
-			}
+		if cur != task.branch {
+			git.Checkout(task.branch, false, git.QuietOutput)
+			cur = task.branch
 		}
-		cur = task.branch
+		err = git.Exec(task.cmd, git.Default)
+		if err != nil {
+			return err
+		}
 	}
 
 	if cur != backupBranch {
