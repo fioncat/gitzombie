@@ -9,9 +9,8 @@ targets=( \
 	"linux_arm64" \
 )
 
-# VERSION=${GITHUB_REF#refs/*/}
-# echo "VERSION=${VERSION}" >> $GITHUB_ENV
-VERSION="0.0.1"
+VERSION=${GITHUB_REF#refs/*/}
+echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
 make_asset() {
 	release_os=$1
