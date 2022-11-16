@@ -3,8 +3,6 @@ package term
 import (
 	"fmt"
 	"os"
-
-	"github.com/manifoldco/promptui"
 )
 
 var (
@@ -15,15 +13,12 @@ func Confirm(msg string, args ...any) bool {
 	if AlwaysYes {
 		return true
 	}
-	msg = fmt.Sprintf(msg, args...)
-	p := &promptui.Prompt{
-		Label: msg,
-
-		IsConfirm: true,
-		Stdout:    os.Stderr,
-	}
-	_, err := p.Run()
-	return err == nil
+	msg = Color(msg, args...)
+	msg = fmt.Sprintf("%s? (y/n) ", msg)
+	fmt.Fprint(os.Stderr, msg)
+	var input string
+	fmt.Scanf("%s", &input)
+	return input == "y"
 }
 
 func ConfirmExit(msg string, args ...any) {

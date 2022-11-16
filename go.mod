@@ -7,7 +7,6 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/google/go-github/v48 v48.1.0
 	github.com/iancoleman/strcase v0.2.0
-	github.com/manifoldco/promptui v0.9.0
 	github.com/pelletier/go-toml/v2 v2.0.5
 	github.com/spf13/cobra v1.6.1
 	github.com/xanzy/go-gitlab v0.74.0
@@ -15,7 +14,6 @@ require (
 )
 
 require (
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
