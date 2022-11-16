@@ -29,12 +29,15 @@ func (o *Open) Run(ctx *Context, args common.Args) error {
 			return err
 		}
 		apiRepo, err = apiGet(ctx, repo)
+		if err != nil {
+			return err
+		}
 
 	default:
 		apiRepo, err = apiSearch(ctx, args.Get(1))
-	}
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	return term.Open(apiRepo.WebURL)

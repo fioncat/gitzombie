@@ -11,6 +11,9 @@ func CompRemote(_ common.Args) (*common.CompResult, error) {
 		return common.EmptyCompResult, nil
 	}
 	remotes, err := git.ListRemotes(git.Mute)
+	if err != nil {
+		return nil, err
+	}
 	return &common.CompResult{Items: remotes}, nil
 }
 

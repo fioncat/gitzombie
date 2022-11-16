@@ -20,7 +20,7 @@ func TestDefault(t *testing.T) {
 	}
 
 	s := &testStruct{
-		NoneDefault:    "user-specifed",
+		NoneDefault:    "user-specified",
 		NoneDefaultNum: 200,
 	}
 	ExpandDefault(s)
@@ -32,7 +32,7 @@ func TestDefault(t *testing.T) {
 
 		Path: os.ExpandEnv("$HOME/dev"),
 
-		NoneDefault:    "user-specifed",
+		NoneDefault:    "user-specified",
 		NoneDefaultNum: 200,
 	}
 	if !reflect.DeepEqual(s, expected) {

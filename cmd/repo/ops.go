@@ -53,7 +53,7 @@ func execProvider(op string, remote *core.Remote, h func(p api.Provider) error) 
 
 func getRemote(name string) (*core.Remote, error) {
 	if name == "" {
-		return nil, errors.New("you must specifiy a remote")
+		return nil, errors.New("you must specify a remote")
 	}
 	return core.GetRemote(name)
 }
