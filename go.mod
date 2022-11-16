@@ -3,6 +3,7 @@ module github.com/fioncat/gitzombie
 go 1.19
 
 require (
+	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.13.0
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/google/go-github/v48 v48.1.0

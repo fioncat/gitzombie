@@ -3,12 +3,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/spf13/cobra"
-)
-
-var (
-	ErrNotGit = errors.New("you are not int a git repository")
 )
 
 type App[Context any] interface {

@@ -3,7 +3,6 @@ package repo
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/fioncat/gitzombie/cmd/common"
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/errors"
+	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/term"
 	"github.com/spf13/cobra"
 )
@@ -49,7 +49,7 @@ func execProvider(op string, remote *core.Remote, h func(p api.Provider) error) 
 		return err
 	}
 
-	term.PrintSearch("%s %s", op, p.Name())
+	term.PrintOperation("calling %s API to %s", p.Name(), op)
 	err = h(p)
 	return errors.Trace(err, "request %s api", p.Name())
 }
@@ -59,8 +59,6 @@ type Context struct {
 }
 
 type App struct{}
-
-func (app *App) Name() string { return "repo" }
 
 func (app *App) BuildContext(args common.Args) (*Context, error) {
 	ctx := new(Context)
@@ -134,16 +132,19 @@ func getLocalRepo(ctx *Context, remote *core.Remote, name string) (*core.Reposit
 
 func getRemoteRepo(remote *core.Remote, query string) (*api.Repository, error) {
 	var group string
+	var op string
 	if strings.HasSuffix(query, "/") {
 		group = strings.Trim(query, "/")
 		query = ""
+		op = fmt.Sprintf("search group %q", group)
 	} else {
+		op = fmt.Sprintf("search %q", query)
 		group, query = core.SplitGroup(query)
 	}
 
 	var repos []*api.Repository
 	var err error
-	err = execProvider("searching", remote, func(p api.Provider) error {
+	err = execProvider(op, remote, func(p api.Provider) error {
 		repos, err = p.SearchRepositories(group, query)
 		return err
 	})
@@ -182,17 +183,21 @@ func ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repository) error 
 	switch {
 	case os.IsNotExist(err):
 		term.ConfirmExit("repo %s does not exists, do you want to clone it", repo.FullName())
-		err = term.Exec("git", "clone", url, repo.Path)
+		err = git.Clone(url, repo.Path, git.Default)
 		if err != nil {
 			return err
 		}
 		user, email := remote.GetUserEmail(repo)
-		err = term.Exec("git", "-C", repo.Path, "config", "user.name", user)
+		err = git.Config("user.name", user, &git.Options{
+			Path: repo.Path,
+		})
 		if err != nil {
 			return err
 		}
 
-		err = term.Exec("git", "-C", repo.Path, "config", "user.email", email)
+		err = git.Config("user.email", email, &git.Options{
+			Path: repo.Path,
+		})
 		if err != nil {
 			return err
 		}
@@ -215,7 +220,7 @@ func ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repository) error 
 type Home struct{}
 
 func (home *Home) Use() string    { return "repo remote [repo]" }
-func (home *Home) Desc() string   { return "print the home path of a repo" }
+func (home *Home) Desc() string   { return "Print the home path of a repo" }
 func (home *Home) Action() string { return "home" }
 
 func (home *Home) Prepare(cmd *cobra.Command) {
@@ -294,20 +299,9 @@ func (attach *Attach) Prepare(cmd *cobra.Command) {
 }
 
 func (attach *Attach) Run(ctx *Context, args common.Args) error {
-	dir, err := os.Getwd()
+	dir, err := git.EnsureCurrent()
 	if err != nil {
-		return errors.Trace(err, "get current dir")
-	}
-	gitDir := filepath.Join(dir, ".git")
-	stat, err := os.Stat(gitDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return common.ErrNotGit
-		}
-		return errors.Trace(err, "check git exists")
-	}
-	if !stat.IsDir() {
-		return common.ErrNotGit
+		return err
 	}
 
 	remote, err := getRemote(args.Get(0))
@@ -334,7 +328,7 @@ func (attach *Attach) Run(ctx *Context, args common.Args) error {
 		if err != nil {
 			return err
 		}
-		err = term.Exec("git", "remote", "set-url", "origin", url)
+		err = git.SetRemoteURL("origin", url, git.Default)
 		if err != nil {
 			return err
 		}
@@ -342,12 +336,12 @@ func (attach *Attach) Run(ctx *Context, args common.Args) error {
 
 	if term.Confirm("overwrite user and email") {
 		user, email := remote.GetUserEmail(repo)
-		err = term.Exec("git", "config", "user.name", user)
+		err = git.Config("user.name", user, git.Default)
 		if err != nil {
 			return err
 		}
 
-		err = term.Exec("git", "config", "user.email", email)
+		err = git.Config("user.email", email, git.Default)
 		if err != nil {
 			return err
 		}
