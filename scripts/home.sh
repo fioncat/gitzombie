@@ -22,6 +22,7 @@ _gz() {
 }
 
 complete -F _gz gz
+alias gzh="gz github"
 
 alias gzb="gitzombie"
 alias gzo="gitzombie open repo"

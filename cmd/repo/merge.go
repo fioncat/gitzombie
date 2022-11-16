@@ -36,6 +36,7 @@ func (m *Merge) Prepare(cmd *cobra.Command) {
 }
 
 func (m *Merge) Run(ctx *Context, args common.Args) error {
+	ctx.store.ReadOnly()
 	err := git.EnsureNoUncommitted(git.Default)
 	if err != nil {
 		return err
