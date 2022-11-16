@@ -143,7 +143,7 @@ func getRemoteRepo(remote *core.Remote, query string) (*api.Repository, error) {
 
 	var repos []*api.Repository
 	var err error
-	err = execProvider("Searching", remote, func(p api.Provider) error {
+	err = execProvider("searching", remote, func(p api.Provider) error {
 		repos, err = p.SearchRepositories(group, query)
 		return err
 	})
