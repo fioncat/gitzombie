@@ -26,7 +26,4 @@ jobs:
       with:
         token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
         files: |
-          out/gitzombie-${{ env.VERSION }}-darwin_amd64.zip
-          out/gitzombie-${{ env.VERSION }}-darwin_arm64.zip
-          out/gitzombie-${{ env.VERSION }}-linux_amd64.zip
-          out/gitzombie-${{ env.VERSION }}-linux_arm64.zip
+          out/*.zip
