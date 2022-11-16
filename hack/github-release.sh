@@ -27,6 +27,6 @@ for target in "${targets[@]}"; do
 	BUILD_OS="${tmp[0]}"
 	BUILD_ARCH="${tmp[1]}"
 	GOOS="${BUILD_OS}" GOARCH="${BUILD_ARCH}" go build -ldflags="-X 'main.Version=${VERSION}'" -o bin/gitzombie
-	zip -r out/gitzombie-${VERSION}-${target}.zip ./bin LICENSE
+	zip -r out/gitzombie-${target}.zip ./bin LICENSE
 done
 
