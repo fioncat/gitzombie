@@ -1,14 +1,5 @@
-
 gz() {
 	local ret=$(gitzombie home repo $@)
-	if [[ -d $ret ]]; then
-		cd $ret
-		return
-	fi
-}
-
-gzs() {
-	local ret=$(gitzombie home remote $@)
 	if [[ -d $ret ]]; then
 		cd $ret
 		return
@@ -31,6 +22,7 @@ _gz() {
 }
 
 complete -F _gz gz
-complete -F _gz gzs
+alias gzh="gz github"
 
 alias gzb="gitzombie"
+alias gzo="gitzombie open repo"

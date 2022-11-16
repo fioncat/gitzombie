@@ -70,3 +70,8 @@ func PrintError(err error) {
 		ext.Extra()
 	}
 }
+
+func PrintOperation(msg string, args ...any) {
+	msg = fmt.Sprintf(msg, args...)
+	Print("=> blue|%s|", msg)
+}

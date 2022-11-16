@@ -140,6 +140,8 @@ func (s *RepositoryStorage) init() error {
 				err:  fmt.Errorf("path %q is duplicate", path),
 			}
 		}
+		s.pathIndex[repo.Path] = repo
+
 		repoMap := s.nameIndex[repo.Remote]
 		if repoMap == nil {
 			repoMap = make(map[string]*Repository, 1)

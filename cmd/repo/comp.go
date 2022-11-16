@@ -42,18 +42,8 @@ func compGroup(args common.Args) (*common.CompResult, error) {
 		return nil, err
 	}
 
-	groups := make([]string, 0)
-	groupMap := make(map[string]struct{})
-	for _, repo := range repos {
-		group, _ := core.SplitGroup(repo.Name)
-		if _, ok := groupMap[group]; ok {
-			continue
-		}
-		groupMap[group] = struct{}{}
-		groups = append(groups, group+"/")
-	}
 	return &common.CompResult{
-		Items: groups,
+		Items: convertToGroups(repos),
 		Flag:  common.CompNoSpaceFlag,
 	}, nil
 }

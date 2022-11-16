@@ -3,12 +3,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/spf13/cobra"
-)
-
-var (
-	ErrNotGit = errors.New("you are not int a git repository")
 )
 
 type App[Context any] interface {
@@ -71,3 +66,8 @@ func Build[Context any](cmd *cobra.Command, app App[Context]) {
 		}
 	}
 }
+
+type NoneContext struct{}
+
+func (NoneContext) BuildContext(Args) (*struct{}, error) { return nil, nil }
+func (NoneContext) Close(_ *struct{}) error              { return nil }
