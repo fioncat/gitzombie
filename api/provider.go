@@ -5,7 +5,9 @@ import (
 	"github.com/fioncat/gitzombie/pkg/errors"
 )
 
-var ErrNoResult = errors.New("no result from remote server")
+var (
+	ErrNoResult = errors.New("no result from remote server")
+)
 
 type Repository struct {
 	Name string
@@ -21,8 +23,21 @@ type Repository struct {
 	Archived bool
 }
 
+type MergeOption struct {
+	Title string
+	Body  string
+
+	SourceBranch string
+	TargetBranch string
+
+	Upstream *Repository
+}
+
 type Provider interface {
 	Name() string
 	SearchRepositories(group, query string) ([]*Repository, error)
 	GetRepository(name string) (*Repository, error)
+
+	GetMerge(repo *core.Repository, opts MergeOption) (string, error)
+	CreateMerge(repo *core.Repository, opts MergeOption) (string, error)
 }

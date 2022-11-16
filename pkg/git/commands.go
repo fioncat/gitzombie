@@ -165,3 +165,7 @@ func GetMainBranch(remote string, opts *Options) (string, error) {
 	main := strings.TrimPrefix(out, ref)
 	return main, nil
 }
+
+func GetCurrentBranch(opts *Options) (string, error) {
+	return Output([]string{"branch", "--show-current"}, opts)
+}

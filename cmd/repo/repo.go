@@ -38,6 +38,7 @@ func (app *App) Ops() []common.Operation[Context] {
 		&Attach{},
 		&Delete{},
 		&Open{},
+		&Merge{},
 	}
 }
 

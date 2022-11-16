@@ -1,6 +1,7 @@
 package gitlab
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -81,6 +82,59 @@ func (p *Provider) GetRepository(name string) (*api.Repository, error) {
 	}
 
 	return p.convertRepo(prj)
+}
+
+func (p *Provider) GetMerge(repo *core.Repository, opts api.MergeOption) (string, error) {
+	// TODO: Support forked merge
+	if opts.Upstream != nil {
+		return "", errors.New("now we donot support merge to upstream repo")
+	}
+	mr, err := p.getMergeRequest(repo, opts)
+	if err != nil {
+		return "", err
+	}
+	if mr == nil {
+		return "", nil
+	}
+	return mr.WebURL, nil
+}
+
+func (p *Provider) CreateMerge(repo *core.Repository, opts api.MergeOption) (string, error) {
+	// TODO: Support forked merge
+	if opts.Upstream != nil {
+		return "", errors.New("now we donot support merge to upstream repo")
+	}
+	src, tar := opts.SourceBranch, opts.TargetBranch
+	mr, _, err := p.cli.MergeRequests.CreateMergeRequest(repo.Name,
+		&gitlab.CreateMergeRequestOptions{
+			Title:        gitlab.String(opts.Title),
+			SourceBranch: gitlab.String(src),
+			TargetBranch: gitlab.String(tar),
+		})
+	if err != nil {
+		return "", err
+	}
+
+	return mr.WebURL, nil
+}
+
+func (p *Provider) getMergeRequest(repo *core.Repository, opts api.MergeOption) (*gitlab.MergeRequest, error) {
+	mrs, resp, err := p.cli.MergeRequests.ListProjectMergeRequests(repo.Name,
+		&gitlab.ListProjectMergeRequestsOptions{
+			State:        gitlab.String("opened"),
+			SourceBranch: gitlab.String(opts.SourceBranch),
+			TargetBranch: gitlab.String(opts.TargetBranch),
+		})
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if len(mrs) == 0 {
+		return nil, nil
+	}
+	return mrs[0], nil
 }
 
 func (p *Provider) wrapResp(name string, resp *gitlab.Response, err error) error {

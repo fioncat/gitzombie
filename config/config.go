@@ -1,14 +1,12 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/fioncat/gitzombie/pkg/errors"
-	"github.com/fioncat/gitzombie/pkg/term"
+	"github.com/fioncat/gitzombie/pkg/osutil"
 	"github.com/fioncat/gitzombie/pkg/validate"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -20,13 +18,6 @@ type Config struct {
 	SearchLimit int `toml:"search_limit" default:"200"`
 
 	Editor string `toml:"editor" default:"vim"`
-}
-
-func (cfg *Config) normalize() {
-	validate.ExpandDefault(cfg)
-	if !strings.Contains(cfg.Editor, term.FilePlaceholder) {
-		cfg.Editor = fmt.Sprintf("%s %s", cfg.Editor, term.FilePlaceholder)
-	}
 }
 
 var (
@@ -55,7 +46,7 @@ func Init() error {
 		// The local dir must be ensured before using because we need to store
 		// some data under it.
 		localDir = filepath.Join(homeDir, ".local", "share", "gitzombie")
-		err = term.EnsureDir(localDir)
+		err = osutil.EnsureDir(localDir)
 		if err != nil {
 			err = errors.Trace(err, "ensure local dir")
 			return
@@ -90,7 +81,7 @@ func Init() error {
 			err = errors.Trace(err, "stat config file")
 			return
 		}
-		instance.normalize()
+		validate.ExpandDefault(instance)
 	})
 	return err
 }

@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-const FilePlaceholder = "{file}"
-
 func FuzzySearch(name string, items []string) (int, error) {
 	PrintOperation("use fzf to search %s", name)
 	var inputBuf bytes.Buffer

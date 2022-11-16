@@ -13,6 +13,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type pullOptions struct {
+	Owner string
+	Name  string
+
+	Base string
+	Head string
+
+	HeadOwner string
+}
+
 type Provider struct {
 	ctx context.Context
 	cli *github.Client
@@ -107,6 +117,100 @@ func (p *Provider) searchInGroup(group, query string) ([]*api.Repository, error)
 	}
 
 	return repos, nil
+}
+
+func (p *Provider) GetMerge(repo *core.Repository, opts api.MergeOption) (string, error) {
+	pullOpts, err := p.createPullOptions(repo, opts)
+	if err != nil {
+		return "", err
+	}
+	if opts.Upstream != nil {
+		query := fmt.Sprintf("is:open is:pr author:%s head:%s base:%s repo:%s",
+			pullOpts.HeadOwner, opts.SourceBranch, opts.TargetBranch, opts.Upstream.Name)
+		result, resp, err := p.cli.Search.Issues(p.ctx, query, &github.SearchOptions{})
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return "", nil
+		}
+		if err != nil {
+			return "", err
+		}
+		if result.GetTotal() == 0 {
+			return "", nil
+		}
+
+		return result.Issues[0].GetHTMLURL(), nil
+	}
+
+	prs, resp, err := p.cli.PullRequests.List(p.ctx, pullOpts.Owner, pullOpts.Name,
+		&github.PullRequestListOptions{
+			State: "open",
+			Head:  pullOpts.Head,
+			Base:  pullOpts.Base,
+		})
+	if resp.StatusCode == http.StatusNotFound {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	if len(prs) == 0 {
+		return "", nil
+	}
+	pr := prs[0]
+	return pr.GetHTMLURL(), nil
+}
+
+func (p *Provider) CreateMerge(repo *core.Repository, opts api.MergeOption) (string, error) {
+	pullOpts, err := p.createPullOptions(repo, opts)
+	if err != nil {
+		return "", err
+	}
+	pr, _, err := p.cli.PullRequests.Create(p.ctx, pullOpts.Owner, pullOpts.Name,
+		&github.NewPullRequest{
+			Title: github.String(opts.Title),
+			Body:  github.String(opts.Body),
+			Head:  github.String(pullOpts.Head),
+			Base:  github.String(pullOpts.Base),
+		})
+	if err != nil || pr == nil {
+		return "", err
+	}
+	return pr.GetHTMLURL(), nil
+}
+
+func (p *Provider) createPullOptions(repo *core.Repository, opts api.MergeOption) (*pullOptions, error) {
+	var targetRepo string
+	var head string
+	var headOwner string
+	base := opts.TargetBranch
+	if opts.Upstream != nil {
+		// Create PR to upstream, the operation object is upstream itself.
+		// The base is upstream targetBranch, The head is "user:sourceBranch".
+		// For example, merge "fioncat:kubernetes" to "kubernetes:kubernetes"
+		// Branch is "master", the params are:
+		//   repo: kubernetes/kubernetes
+		//   base: master
+		//   head: fioncat:master
+		targetRepo = opts.Upstream.Name
+		headOwner = repo.Group()
+		head = fmt.Sprintf("%s:%s", headOwner, opts.SourceBranch)
+	} else {
+		targetRepo = repo.Name
+		head = opts.SourceBranch
+	}
+	owner, name, err := parseOwner(targetRepo)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pullOptions{
+		Owner: owner,
+		Name:  name,
+		Head:  head,
+		Base:  base,
+
+		HeadOwner: headOwner,
+	}, nil
 }
 
 func (p *Provider) wrapResp(name string, resp *github.Response, err error) error {
