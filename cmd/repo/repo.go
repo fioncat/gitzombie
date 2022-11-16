@@ -33,8 +33,9 @@ func (app *App) BuildContext(args common.Args) (*Context, error) {
 
 func (app *App) Ops() []common.Operation[Context] {
 	return []common.Operation[Context]{
-		&Home{}, &RemoteHome{},
-		&List{}, &Attach{},
+		&Home{},
+		&List{},
+		&Attach{},
 		&Delete{},
 		&Open{},
 	}

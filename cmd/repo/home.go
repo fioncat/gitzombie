@@ -12,7 +12,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Home struct{}
+type Home struct {
+	search bool
+}
 
 func (home *Home) Use() string    { return "repo remote [repo]" }
 func (home *Home) Desc() string   { return "Print the home path of a repo" }
@@ -21,63 +23,47 @@ func (home *Home) Action() string { return "home" }
 func (home *Home) Prepare(cmd *cobra.Command) {
 	cmd.Args = cobra.RangeArgs(1, 2)
 	cmd.ValidArgsFunction = common.Comp(compRemote, compRepo)
+	cmd.Flags().BoolVarP(&home.search, "search", "s", false, "search from remote")
 }
 
 func (home *Home) Run(ctx *Context, args common.Args) error {
-	repo, err := getLocal(ctx, args.Get(1))
+	var repo *core.Repository
+	var err error
+	if home.search {
+		repo, err = home.searchRepo(ctx, args)
+	} else {
+		repo, err = getLocal(ctx, args.Get(1))
+	}
 	if err != nil {
 		return err
 	}
 
-	err = ensureRepo(ctx, ctx.remote, repo)
+	err = home.ensureRepo(ctx, ctx.remote, repo)
 	if err != nil {
 		return err
 	}
-
 	repo.View++
 	fmt.Println(repo.Path)
 	return nil
 }
 
-type RemoteHome struct{}
-
-func (home *RemoteHome) Use() string    { return "remote remote query" }
-func (home *RemoteHome) Desc() string   { return "search remote and print the home path" }
-func (home *RemoteHome) Action() string { return "home" }
-
-func (home *RemoteHome) Prepare(cmd *cobra.Command) {
-	cmd.Args = cobra.ExactArgs(2)
-	cmd.ValidArgsFunction = common.Comp(compRemote, compGroup)
-}
-
-func (home *RemoteHome) Run(ctx *Context, args common.Args) error {
-	remote, err := getRemote(args.Get(0))
+func (home *Home) searchRepo(ctx *Context, args common.Args) (*core.Repository, error) {
+	apiRepo, err := apiSearch(ctx, args.Get(1))
 	if err != nil {
-		return err
-	}
-	remoteRepo, err := apiSearch(ctx, args.Get(1))
-	if err != nil {
-		return err
+		return nil, err
 	}
 
-	repo := ctx.store.GetByName(remote.Name, remoteRepo.Name)
+	repo := ctx.store.GetByName(ctx.remote.Name, apiRepo.Name)
 	if repo == nil {
-		repo, err = core.CreateRepository(remote, remoteRepo.Name)
+		repo, err = core.CreateRepository(ctx.remote, apiRepo.Name)
 		if err != nil {
-			return errors.Trace(err, "create repository")
+			return nil, err
 		}
 	}
-	err = ensureRepo(ctx, remote, repo)
-	if err != nil {
-		return err
-	}
-
-	repo.View++
-	fmt.Println(repo.Path)
-	return nil
+	return repo, nil
 }
 
-func ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repository) error {
+func (home *Home) ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repository) error {
 	url, err := remote.GetCloneURL(repo)
 	if err != nil {
 		return errors.Trace(err, "get clone url")
