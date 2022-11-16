@@ -9,8 +9,9 @@ targets=( \
 	"linux_arm64" \
 )
 
-VERSION=${GITHUB_REF#refs/*/}
-echo "VERSION=${VERSION}" >> $GITHUB_ENV
+# VERSION=${GITHUB_REF#refs/*/}
+# echo "VERSION=${VERSION}" >> $GITHUB_ENV
+VERSION="0.0.1"
 
 make_asset() {
 	release_os=$1
@@ -19,14 +20,14 @@ make_asset() {
 	zip -r out/${zip_file} ./out/${release_os}_${release_arch}/bin LICENSE
 }
 
+mkdir -p out
+
 for target in "${targets[@]}"; do
 	echo "Build target: ${target}"
 	IFS='_' read -r -a tmp <<< "$target"
 	BUILD_OS="${tmp[0]}"
 	BUILD_ARCH="${tmp[1]}"
-	BIN_DIR="out/${target}/bin"
-	BUILD_PATH="${BIN_DIR}/gitzombie"
-	GOOS="${BUILD_OS}" GOARCH="${BUILD_ARCH}" go build -ldflags="-X 'main.Version=${VERSION}'" -o ${BUILD_PATH}
-	zip -r out/gitzombie-${VERSION}-${target}.zip ${BIN_DIR} LICENSE
+	GOOS="${BUILD_OS}" GOARCH="${BUILD_ARCH}" go build -ldflags="-X 'main.Version=${VERSION}'" -o bin/gitzombie
+	zip -r out/gitzombie-${VERSION}-${target}.zip ./bin LICENSE
 done
 
