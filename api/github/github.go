@@ -65,6 +65,22 @@ func (p *Provider) SearchRepositories(group, query string) ([]*api.Repository, e
 	return repos, nil
 }
 
+func (p *Provider) GetRepository(name string) (*api.Repository, error) {
+	owner, repoName, err := parseOwner(name)
+	if err != nil {
+		return nil, err
+	}
+
+	githubRepo, resp, err := p.cli.Repositories.Get(p.ctx, owner, repoName)
+	if err = p.wrapResp(name, resp, err); err != nil {
+		return nil, err
+	}
+	if githubRepo == nil {
+		return nil, p.notFound(name)
+	}
+	return p.convertRepo(githubRepo), nil
+}
+
 func (p *Provider) searchInGroup(group, query string) ([]*api.Repository, error) {
 	githubRepos, resp, err := p.cli.Repositories.List(p.ctx, group,
 		&github.RepositoryListOptions{
@@ -121,4 +137,12 @@ func (p *Provider) convertRepo(githubRepo *github.Repository) *api.Repository {
 		repo.Upstream = p.convertRepo(forked)
 	}
 	return repo
+}
+
+func parseOwner(name string) (string, string, error) {
+	tmp := strings.Split(name, "/")
+	if len(tmp) != 2 {
+		return "", "", fmt.Errorf("invalid Github repo name %q", name)
+	}
+	return tmp[0], tmp[1], nil
 }

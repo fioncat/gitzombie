@@ -66,3 +66,8 @@ func Build[Context any](cmd *cobra.Command, app App[Context]) {
 		}
 	}
 }
+
+type NoneContext struct{}
+
+func (NoneContext) BuildContext(Args) (*struct{}, error) { return nil, nil }
+func (NoneContext) Close(_ *struct{}) error              { return nil }

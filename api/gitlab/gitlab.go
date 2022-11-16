@@ -68,7 +68,19 @@ func (p *Provider) SearchRepositories(group, query string) ([]*api.Repository, e
 	}
 
 	return repos, nil
+}
 
+func (p *Provider) GetRepository(name string) (*api.Repository, error) {
+	prj, resp, err := p.cli.Projects.GetProject(name,
+		&gitlab.GetProjectOptions{})
+	if err = p.wrapResp(name, resp, err); err != nil {
+		return nil, err
+	}
+	if prj == nil {
+		return nil, p.notFound(name)
+	}
+
+	return p.convertRepo(prj)
 }
 
 func (p *Provider) wrapResp(name string, resp *gitlab.Response, err error) error {

@@ -24,4 +24,5 @@ type Repository struct {
 type Provider interface {
 	Name() string
 	SearchRepositories(group, query string) ([]*Repository, error)
+	GetRepository(name string) (*Repository, error)
 }

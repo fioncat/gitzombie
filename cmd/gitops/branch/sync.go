@@ -1,48 +1,17 @@
-package git
+package branch
 
 import (
 	"fmt"
 
 	"github.com/dustin/go-humanize/english"
 	"github.com/fioncat/gitzombie/cmd/common"
+	"github.com/fioncat/gitzombie/cmd/gitops"
 	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/term"
 	"github.com/spf13/cobra"
 )
 
-type CreateBranch struct {
-	noPush bool
-	remote string
-}
-
-func (b *CreateBranch) Use() string    { return "branch" }
-func (b *CreateBranch) Desc() string   { return "Create a branch" }
-func (b *CreateBranch) Action() string { return "create" }
-
-func (b *CreateBranch) Prepare(cmd *cobra.Command) {
-	cmd.Flags().BoolVarP(&b.noPush, "no-push", "", false, "donot push to remote")
-	cmd.Flags().StringVarP(&b.remote, "remote", "r", "origin", "remote name")
-	cmd.RegisterFlagCompletionFunc("remote", common.Comp(compRemote))
-
-	cmd.Args = cobra.ExactArgs(1)
-}
-
-func (b *CreateBranch) Run(_ *Context, args common.Args) error {
-	name := args.Get(0)
-	err := git.Checkout(name, true, git.Default)
-	if err != nil {
-		return err
-	}
-	if !b.noPush {
-		err = git.Exec([]string{"push", "--set-upstream", b.remote, name}, git.Default)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type SyncBranch struct {
+type Sync struct {
 	noDelete bool
 	remote   string
 
@@ -53,17 +22,17 @@ type SyncBranch struct {
 	}
 }
 
-func (b *SyncBranch) Use() string    { return "branch" }
-func (b *SyncBranch) Desc() string   { return "Sync branch with remote" }
-func (b *SyncBranch) Action() string { return "sync" }
+func (b *Sync) Use() string    { return "branch" }
+func (b *Sync) Desc() string   { return "Sync branch with remote" }
+func (b *Sync) Action() string { return "sync" }
 
-func (b *SyncBranch) Prepare(cmd *cobra.Command) {
+func (b *Sync) Prepare(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&b.noDelete, "no-delete", "", false, "donot delete any branch")
 	cmd.Flags().StringVarP(&b.remote, "remote", "r", "origin", "remote name")
-	cmd.RegisterFlagCompletionFunc("remote", common.Comp(compRemote))
+	cmd.RegisterFlagCompletionFunc("remote", common.Comp(gitops.CompRemote))
 }
 
-func (b *SyncBranch) Run(_ *Context, args common.Args) error {
+func (b *Sync) Run(_ *struct{}, args common.Args) error {
 	err := git.EnsureNoUncommitted(git.Default)
 	if err != nil {
 		return err
