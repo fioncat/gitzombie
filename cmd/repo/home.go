@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fioncat/gitzombie/cmd/common"
+	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/git"
@@ -12,50 +12,55 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Home struct {
-	search bool
+type HomeFlags struct {
+	Search bool
 }
 
-func (home *Home) Use() string    { return "repo remote [repo]" }
-func (home *Home) Desc() string   { return "Print the home path of a repo" }
-func (home *Home) Action() string { return "home" }
+var Home = app.Register(&app.Command[HomeFlags, Data]{
+	Use:    "repo {remote} {repo}",
+	Desc:   "Print the home path of a repo",
+	Action: "Home",
 
-func (home *Home) Prepare(cmd *cobra.Command) {
-	cmd.Args = cobra.RangeArgs(1, 2)
-	cmd.ValidArgsFunction = common.Comp(compRemote, compRepo)
-	cmd.Flags().BoolVarP(&home.search, "search", "s", false, "search from remote")
-}
+	Init: initData[HomeFlags],
 
-func (home *Home) Run(ctx *Context, args common.Args) error {
-	var repo *core.Repository
-	var err error
-	if home.search {
-		repo, err = home.searchRepo(ctx, args)
-	} else {
-		repo, err = getLocal(ctx, args.Get(1))
-	}
-	if err != nil {
-		return err
-	}
+	Prepare: func(cmd *cobra.Command, flags *HomeFlags) {
+		cmd.Args = cobra.RangeArgs(1, 2)
+		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompRepo)
+		cmd.Flags().BoolVarP(&flags.Search, "search", "s", false, "search from remote")
+	},
 
-	err = home.ensureRepo(ctx, ctx.remote, repo)
-	if err != nil {
-		return err
-	}
-	repo.View++
-	fmt.Println(repo.Path)
-	return nil
-}
+	Run: func(ctx *app.Context[HomeFlags, Data]) error {
+		var repo *core.Repository
+		var err error
+		if ctx.Flags.Search {
+			repo, err = homeSearchRepo(ctx)
+		} else {
+			repo, err = getLocal(ctx, ctx.Arg(1))
+		}
+		if err != nil {
+			return err
+		}
 
-func (home *Home) searchRepo(ctx *Context, args common.Args) (*core.Repository, error) {
-	apiRepo, err := apiSearch(ctx, args.Get(1))
+		err = homeEnsureRepo(ctx, repo)
+		if err != nil {
+			return err
+		}
+		repo.View++
+		fmt.Println(repo.Path)
+		return nil
+
+	},
+})
+
+func homeSearchRepo(ctx *app.Context[HomeFlags, Data]) (*core.Repository, error) {
+	apiRepo, err := apiSearch(ctx, ctx.Arg(1))
 	if err != nil {
 		return nil, err
 	}
 
-	repo := ctx.store.GetByName(ctx.remote.Name, apiRepo.Name)
+	repo := ctx.Data.Store.GetByName(ctx.Data.Remote.Name, apiRepo.Name)
 	if repo == nil {
-		repo, err = core.CreateRepository(ctx.remote, apiRepo.Name)
+		repo, err = core.CreateRepository(ctx.Data.Remote, apiRepo.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -63,8 +68,8 @@ func (home *Home) searchRepo(ctx *Context, args common.Args) (*core.Repository, 
 	return repo, nil
 }
 
-func (home *Home) ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repository) error {
-	url, err := remote.GetCloneURL(repo)
+func homeEnsureRepo(ctx *app.Context[HomeFlags, Data], repo *core.Repository) error {
+	url, err := ctx.Data.Remote.GetCloneURL(repo)
 	if err != nil {
 		return errors.Trace(err, "get clone url")
 	}
@@ -76,7 +81,7 @@ func (home *Home) ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repos
 		if err != nil {
 			return err
 		}
-		user, email := remote.GetUserEmail(repo)
+		user, email := ctx.Data.Remote.GetUserEmail(repo)
 		err = git.Config("user.name", user, &git.Options{
 			Path: repo.Path,
 		})
@@ -100,8 +105,8 @@ func (home *Home) ensureRepo(ctx *Context, remote *core.Remote, repo *core.Repos
 		return errors.Trace(err, "check repo exists")
 	}
 
-	if ctx.store.GetByName(remote.Name, repo.Name) == nil {
-		return ctx.store.Add(repo)
+	if ctx.Data.Store.GetByName(ctx.Data.Remote.Name, repo.Name) == nil {
+		return ctx.Data.Store.Add(repo)
 	}
 	return nil
 }

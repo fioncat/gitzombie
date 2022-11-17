@@ -123,6 +123,10 @@ func Checkout(name string, create bool, opts *Options) error {
 	return Exec(args, opts)
 }
 
+func Switch(local, target string, opts *Options) error {
+	return Exec([]string{"switch", "-c", local, target}, opts)
+}
+
 func EnsureNoUncommitted(opts *Options) error {
 	changes, err := OutputItems([]string{"status", "-s"}, opts)
 	if err != nil {
@@ -168,4 +172,23 @@ func GetMainBranch(remote string, opts *Options) (string, error) {
 
 func GetCurrentBranch(opts *Options) (string, error) {
 	return Output([]string{"branch", "--show-current"}, opts)
+}
+
+func CreateTag(tag string, opts *Options) error {
+	return Exec([]string{"tag", tag}, opts)
+}
+
+func DeleteTag(tag string, opts *Options) error {
+	return Exec([]string{"tag", "-d", tag}, opts)
+}
+
+func PushTag(tag string, remote string, remove bool, opts *Options) error {
+	if remove {
+		return Exec([]string{"push", "--delete", remote, tag}, opts)
+	}
+	return Exec([]string{"push", remote, tag}, opts)
+}
+
+func ListTags(opts *Options) ([]string, error) {
+	return OutputItems([]string{"tag"}, opts)
 }

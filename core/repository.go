@@ -350,3 +350,17 @@ func (err *readRepositoryError) Extra() {
 	term.Print("")
 	term.Print("yellow|The repository data is broken, please fix or delete it: %s|", err.path)
 }
+
+func ConvertToGroups(repos []*Repository) []string {
+	groups := make([]string, 0)
+	groupMap := make(map[string]struct{})
+	for _, repo := range repos {
+		group, _ := SplitGroup(repo.Name)
+		if _, ok := groupMap[group]; ok {
+			continue
+		}
+		groupMap[group] = struct{}{}
+		groups = append(groups, group+"/")
+	}
+	return groups
+}
