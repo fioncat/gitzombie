@@ -26,3 +26,6 @@ alias gzh="gz github"
 
 alias gzb="gitzombie"
 alias gzo="gitzombie open repo"
+alias gzk="gitzombie switch"
+alias gzs="gitzombie sync branch"
+alias gze="gitzombie edit"

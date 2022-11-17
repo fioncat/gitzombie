@@ -59,16 +59,34 @@ func CompGitRemote(_ []string) (*CompResult, error) {
 	return &CompResult{Items: remotes}, nil
 }
 
-func CompGitLocalBranch(_ []string) (*CompResult, error) {
+func CompGitLocalBranch(current bool) CompAction {
+	return func(_ []string) (*CompResult, error) {
+		names, err := git.ListLocalBranchNames(current, git.Mute)
+		if err != nil {
+			return nil, err
+		}
+		return &CompResult{Items: names}, nil
+	}
+}
+
+func CompGitRemoteBranch(_ []string) (*CompResult, error) {
 	branches, err := git.ListLocalBranches(git.Mute)
 	if err != nil {
 		return nil, err
 	}
-	names := make([]string, len(branches))
-	for i, branch := range branches {
-		names[i] = branch.Name
+	names, err := git.ListRemoteBranches("origin", branches, git.Mute)
+	if err != nil {
+		return nil, err
 	}
 	return &CompResult{Items: names}, nil
+}
+
+func CompGitTag(_ []string) (*CompResult, error) {
+	items, err := git.ListTags(git.Mute)
+	if err != nil {
+		return nil, err
+	}
+	return &CompResult{Items: items}, nil
 }
 
 func compListRepos(args []string) ([]*core.Repository, error) {

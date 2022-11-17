@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/fioncat/gitzombie/cmd/edit"
 	_ "github.com/fioncat/gitzombie/cmd/gitops/branch"
+	_ "github.com/fioncat/gitzombie/cmd/gitops/tag"
 	_ "github.com/fioncat/gitzombie/cmd/repo"
 )
 

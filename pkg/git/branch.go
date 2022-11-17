@@ -176,3 +176,18 @@ func ListRemoteBranches(remote string, locals []*BranchDetail, opts *Options) ([
 	}
 	return names, nil
 }
+
+func ListLocalBranchNames(current bool, opts *Options) ([]string, error) {
+	branches, err := ListLocalBranches(opts)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(branches))
+	for _, branch := range branches {
+		if branch.Current && !current {
+			continue
+		}
+		names = append(names, branch.Name)
+	}
+	return names, nil
+}

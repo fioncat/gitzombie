@@ -33,8 +33,8 @@ var Merge = app.Register(&app.Command[MergeFlags, Data]{
 
 		cmd.Flags().StringVarP(&flags.SourceBranch, "source", "s", "", "source branch")
 		cmd.Flags().StringVarP(&flags.TargetBranch, "target", "t", "", "target branch")
-		cmd.RegisterFlagCompletionFunc("source", app.Comp(app.CompGitLocalBranch))
-		cmd.RegisterFlagCompletionFunc("target", app.Comp(app.CompGitLocalBranch))
+		cmd.RegisterFlagCompletionFunc("source", app.Comp(app.CompGitLocalBranch(false)))
+		cmd.RegisterFlagCompletionFunc("target", app.Comp(app.CompGitLocalBranch(false)))
 
 		cmd.Args = cobra.ExactArgs(0)
 	},
