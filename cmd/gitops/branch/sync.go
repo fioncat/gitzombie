@@ -159,5 +159,6 @@ func syncCreateTasks(ctx *app.Context[SyncFlags, SyncData]) error {
 			desc:   desc,
 		})
 	}
+	ctx.Data.Tasks = tasks
 	return nil
 }

@@ -8,8 +8,9 @@ import (
 )
 
 var Create = app.Register(&app.Command[gitops.CreateFlags, app.Empty]{
-	Use:  "tag {tag}",
-	Desc: "Create a tag and push to remote",
+	Use:    "tag {tag}",
+	Desc:   "Create a tag and push to remote",
+	Action: "Create",
 
 	Prepare: gitops.PrepareCreate,
 
