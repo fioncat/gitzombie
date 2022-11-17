@@ -9,19 +9,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Delete = app.Register(&app.Command[struct{}, Data]{
+var Delete = app.Register(&app.Command[app.Empty, Data]{
 	Use:    "repo {remote} {repo}",
 	Desc:   "delete a repo",
 	Action: "Delete",
 
-	Init: initData[struct{}],
+	Init: initData[app.Empty],
 
-	Prepare: func(cmd *cobra.Command, _ *struct{}) {
+	PrepareNoFlag: func(cmd *cobra.Command) {
 		cmd.Args = cobra.ExactArgs(2)
 		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompRepo)
 	},
 
-	Run: func(ctx *app.Context[struct{}, Data]) error {
+	Run: func(ctx *app.Context[app.Empty, Data]) error {
 		repo, err := getLocal(ctx, ctx.Arg(1))
 		if err != nil {
 			return err

@@ -6,13 +6,13 @@ import (
 	"github.com/fioncat/gitzombie/pkg/term"
 )
 
-var Detach = app.Register(&app.Command[struct{}, Data]{
+var Detach = app.Register(&app.Command[app.Empty, Data]{
 	Use:  "detach {remote} {repo}",
 	Desc: "detach current path",
 
-	Init: initData[struct{}],
+	Init: initData[app.Empty],
 
-	Run: func(ctx *app.Context[struct{}, Data]) error {
+	Run: func(ctx *app.Context[app.Empty, Data]) error {
 		dir, err := git.EnsureCurrent()
 		if err != nil {
 			return err

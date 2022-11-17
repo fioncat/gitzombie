@@ -47,8 +47,14 @@ type Command[Flags, Data any] struct {
 	Action string
 
 	Prepare PrepareFunction[Flags]
-	Init    InitFunction[Flags, Data]
-	Run     RunFunction[Flags, Data]
+
+	PrepareNoFlag func(cmd *cobra.Command)
+
+	Init InitFunction[Flags, Data]
+
+	Run RunFunction[Flags, Data]
+
+	RunNoContext func() error
 }
 
 var actions = map[string]*cobra.Command{}
@@ -63,6 +69,9 @@ func Register[Flags, Data any](app *Command[Flags, Data]) *cobra.Command {
 		flags = new(Flags)
 		app.Prepare(cmd, flags)
 	}
+	if app.PrepareNoFlag != nil {
+		app.PrepareNoFlag(cmd)
+	}
 	cmd.RunE = func(_ *cobra.Command, args []string) error {
 		ctx := &Context[Flags, Data]{
 			args:  args,
@@ -76,6 +85,12 @@ func Register[Flags, Data any](app *Command[Flags, Data]) *cobra.Command {
 		}
 		if app.Run != nil {
 			err := app.Run(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		if app.RunNoContext != nil {
+			err := app.RunNoContext()
 			if err != nil {
 				return err
 			}
@@ -105,6 +120,8 @@ func Register[Flags, Data any](app *Command[Flags, Data]) *cobra.Command {
 	actionCmd.AddCommand(cmd)
 	return cmd
 }
+
+type Empty struct{}
 
 func Root(cmd *cobra.Command) {
 	for _, action := range actions {

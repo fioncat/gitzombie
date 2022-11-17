@@ -11,7 +11,7 @@ type CreateFlags struct {
 	Remote string
 }
 
-var Create = app.Register(&app.Command[CreateFlags, struct{}]{
+var Create = app.Register(&app.Command[CreateFlags, app.Empty]{
 	Use:    "branch {name}",
 	Desc:   "Create a branch",
 	Action: "Create",
@@ -24,7 +24,7 @@ var Create = app.Register(&app.Command[CreateFlags, struct{}]{
 		cmd.Args = cobra.ExactArgs(1)
 	},
 
-	Run: func(ctx *app.Context[CreateFlags, struct{}]) error {
+	Run: func(ctx *app.Context[CreateFlags, app.Empty]) error {
 		name := ctx.Arg(0)
 		err := git.Checkout(name, true, git.Default)
 		if err != nil {

@@ -18,11 +18,12 @@ import (
 type MergeFlags struct {
 	Upstream bool
 
+	TargetBranch string
 	SourceBranch string
 }
 
 var Merge = app.Register(&app.Command[MergeFlags, Data]{
-	Use:  "merge [-u] [-s source-branch] [target-branch]",
+	Use:  "merge [-u] [-s source-branch] [-t target-branch]",
 	Desc: "Create or open MergeRequest (PR in Github)",
 
 	Init: initData[MergeFlags],
@@ -31,9 +32,11 @@ var Merge = app.Register(&app.Command[MergeFlags, Data]{
 		cmd.Flags().BoolVarP(&flags.Upstream, "upstream", "u", false, "merge to upstream repo")
 
 		cmd.Flags().StringVarP(&flags.SourceBranch, "source", "s", "", "source branch")
+		cmd.Flags().StringVarP(&flags.TargetBranch, "target", "t", "", "target branch")
 		cmd.RegisterFlagCompletionFunc("source", app.Comp(app.CompGitLocalBranch))
+		cmd.RegisterFlagCompletionFunc("target", app.Comp(app.CompGitLocalBranch))
 
-		cmd.Args = cobra.MaximumNArgs(1)
+		cmd.Args = cobra.ExactArgs(0)
 	},
 
 	Run: func(ctx *app.Context[MergeFlags, Data]) error {
@@ -96,7 +99,7 @@ var Merge = app.Register(&app.Command[MergeFlags, Data]{
 })
 
 func mergeBuildOptions(ctx *app.Context[MergeFlags, Data], apiRepo *api.Repository) (*api.MergeOption, error) {
-	tar := ctx.Arg(0)
+	tar := ctx.Flags.TargetBranch
 	if tar == "" {
 		tar = apiRepo.DefaultBranch
 	}

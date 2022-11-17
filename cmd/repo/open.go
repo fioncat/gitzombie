@@ -7,19 +7,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Open = app.Register(&app.Command[struct{}, Data]{
+var Open = app.Register(&app.Command[app.Empty, Data]{
 	Use:    "repo {remote} {repo}",
 	Desc:   "Open repo in default browser",
 	Action: "Open",
 
-	Init: initData[struct{}],
+	Init: initData[app.Empty],
 
-	Prepare: func(cmd *cobra.Command, _ *struct{}) {
+	PrepareNoFlag: func(cmd *cobra.Command) {
 		cmd.Args = cobra.MaximumNArgs(2)
 		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompRepo)
 	},
 
-	Run: func(ctx *app.Context[struct{}, Data]) error {
+	Run: func(ctx *app.Context[app.Empty, Data]) error {
 		ctx.Data.Store.ReadOnly()
 		var apiRepo *api.Repository
 		var err error

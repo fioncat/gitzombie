@@ -8,18 +8,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Attach = app.Register(&app.Command[struct{}, Data]{
+var Attach = app.Register(&app.Command[app.Empty, Data]{
 	Use:  "attach {remote} {repo}",
 	Desc: "attach current path to a repo",
 
-	Init: initData[struct{}],
+	Init: initData[app.Empty],
 
-	Prepare: func(cmd *cobra.Command, _ *struct{}) {
+	PrepareNoFlag: func(cmd *cobra.Command) {
 		cmd.Args = cobra.ExactArgs(2)
 		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompGroup)
 	},
 
-	Run: func(ctx *app.Context[struct{}, Data]) error {
+	Run: func(ctx *app.Context[app.Empty, Data]) error {
 		dir, err := git.EnsureCurrent()
 		if err != nil {
 			return err
