@@ -1,0 +1,12 @@
+host = "github.com"
+protocol = "https"
+
+user = "fioncat"
+email = "lazycat7706@gmail.com"
+
+provider = "github"
+token = ""
+
+[[groups]]
+name = "fioncat"
+protocol = "ssh"
