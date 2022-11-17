@@ -1,9 +1,9 @@
-package example
+package config
 
 import _ "embed"
 
 //go:embed config.toml
-var Config string
+var DefaultConfig string
 
 //go:embed remote.toml
-var Remote string
+var DefaultRemote string

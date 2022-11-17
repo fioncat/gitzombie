@@ -6,7 +6,6 @@ import (
 	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/core"
-	"github.com/fioncat/gitzombie/example"
 	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/validate"
 	"github.com/pelletier/go-toml/v2"
@@ -26,7 +25,7 @@ var Remote = app.Register(&app.Command[app.Empty, app.Empty]{
 	Run: func(ctx *app.Context[app.Empty, app.Empty]) error {
 		name := fmt.Sprintf("%s.toml", ctx.Arg(0))
 		path := config.BaseDir("remotes", name)
-		return Do(path, example.Remote, name, func(s string) error {
+		return Do(path, config.DefaultRemote, name, func(s string) error {
 			data := []byte(s)
 			var remote core.Remote
 			err := toml.Unmarshal(data, &remote)
