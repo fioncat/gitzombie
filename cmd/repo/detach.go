@@ -1,33 +1,31 @@
 package repo
 
 import (
-	"github.com/fioncat/gitzombie/cmd/common"
+	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/term"
-	"github.com/spf13/cobra"
 )
 
-type Detach struct{}
+var Detach = app.Register(&app.Command[struct{}, Data]{
+	Use:  "detach {remote} {repo}",
+	Desc: "detach current path",
 
-func (d *Detach) Use() string    { return "detach remote repo" }
-func (d *Detach) Desc() string   { return "detach current path" }
-func (d *Detach) Action() string { return "" }
+	Init: initData[struct{}],
 
-func (d *Detach) Prepare(cmd *cobra.Command) {}
+	Run: func(ctx *app.Context[struct{}, Data]) error {
+		dir, err := git.EnsureCurrent()
+		if err != nil {
+			return err
+		}
 
-func (d *Detach) Run(ctx *Context, args common.Args) error {
-	dir, err := git.EnsureCurrent()
-	if err != nil {
-		return err
-	}
+		repo, err := ctx.Data.Store.GetByPath(dir)
+		if err != nil {
+			return err
+		}
 
-	repo, err := ctx.store.GetByPath(dir)
-	if err != nil {
-		return err
-	}
+		term.ConfirmExit("Do you want to detach this path from %s", repo.FullName())
 
-	term.ConfirmExit("Do you want to detach this path from %s", repo.FullName())
-
-	ctx.store.Delete(repo)
-	return nil
-}
+		ctx.Data.Store.Delete(repo)
+		return nil
+	},
+})

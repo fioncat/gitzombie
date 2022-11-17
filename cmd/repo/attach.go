@@ -1,68 +1,69 @@
 package repo
 
 import (
-	"github.com/fioncat/gitzombie/cmd/common"
+	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/term"
 	"github.com/spf13/cobra"
 )
 
-type Attach struct{}
+var Attach = app.Register(&app.Command[struct{}, Data]{
+	Use:  "attach {remote} {repo}",
+	Desc: "attach current path to a repo",
 
-func (attach *Attach) Use() string    { return "attach remote repo" }
-func (attach *Attach) Desc() string   { return "attach current path to repo" }
-func (attach *Attach) Action() string { return "" }
+	Init: initData[struct{}],
 
-func (attach *Attach) Prepare(cmd *cobra.Command) {
-	cmd.Args = cobra.ExactArgs(2)
-	cmd.ValidArgsFunction = common.Comp(compRemote, compGroup)
-}
+	Prepare: func(cmd *cobra.Command, _ *struct{}) {
+		cmd.Args = cobra.ExactArgs(2)
+		cmd.ValidArgsFunction = app.Comp(compRemote, compGroup)
+	},
 
-func (attach *Attach) Run(ctx *Context, args common.Args) error {
-	dir, err := git.EnsureCurrent()
-	if err != nil {
-		return err
-	}
-
-	apiRepo, err := apiSearch(ctx, args.Get(1))
-	if err != nil {
-		return err
-	}
-
-	repo, err := core.AttachRepository(ctx.remote, apiRepo.Name, dir)
-	if err != nil {
-		return err
-	}
-
-	err = ctx.store.Add(repo)
-	if err != nil {
-		return err
-	}
-
-	if term.Confirm("overwrite git url") {
-		url, err := ctx.remote.GetCloneURL(repo)
-		if err != nil {
-			return err
-		}
-		err = git.SetRemoteURL("origin", url, git.Default)
-		if err != nil {
-			return err
-		}
-	}
-
-	if term.Confirm("overwrite user and email") {
-		user, email := ctx.remote.GetUserEmail(repo)
-		err = git.Config("user.name", user, git.Default)
+	Run: func(ctx *app.Context[struct{}, Data]) error {
+		dir, err := git.EnsureCurrent()
 		if err != nil {
 			return err
 		}
 
-		err = git.Config("user.email", email, git.Default)
+		apiRepo, err := apiSearch(ctx, ctx.Arg(1))
 		if err != nil {
 			return err
 		}
-	}
 
-	return nil
-}
+		repo, err := core.AttachRepository(ctx.Data.Remote, apiRepo.Name, dir)
+		if err != nil {
+			return err
+		}
+
+		err = ctx.Data.Store.Add(repo)
+		if err != nil {
+			return err
+		}
+
+		if term.Confirm("overwrite git url") {
+			url, err := ctx.Data.Remote.GetCloneURL(repo)
+			if err != nil {
+				return err
+			}
+			err = git.SetRemoteURL("origin", url, git.Default)
+			if err != nil {
+				return err
+			}
+		}
+
+		if term.Confirm("overwrite user and email") {
+			user, email := ctx.Data.Remote.GetUserEmail(repo)
+			err = git.Config("user.name", user, git.Default)
+			if err != nil {
+				return err
+			}
+
+			err = git.Config("user.email", email, git.Default)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	},
+})

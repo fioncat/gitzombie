@@ -8,11 +8,36 @@ import (
 	"github.com/fioncat/gitzombie/api"
 	"github.com/fioncat/gitzombie/api/github"
 	"github.com/fioncat/gitzombie/api/gitlab"
+	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/term"
 )
+
+type Data struct {
+	Remote *core.Remote
+	Store  *core.RepositoryStorage
+}
+
+func initData[Flags any](ctx *app.Context[Flags, Data]) error {
+	data := new(Data)
+	store, err := core.NewRepositoryStorage()
+	if err != nil {
+		return err
+	}
+	data.Store = store
+	ctx.OnClose(func() error { return store.Close() })
+	if ctx.Arg(0) != "" {
+		remote, err := getRemote(ctx.Arg(0))
+		if err != nil {
+			return err
+		}
+		data.Remote = remote
+	}
+	ctx.Data = data
+	return nil
+}
 
 var (
 	providers    map[string]api.Provider
@@ -58,10 +83,10 @@ func getRemote(name string) (*core.Remote, error) {
 	return core.GetRemote(name)
 }
 
-func getLocal(ctx *Context, name string) (*core.Repository, error) {
+func getLocal[Flags any](ctx *app.Context[Flags, Data], name string) (*core.Repository, error) {
 	if strings.HasSuffix(name, "/") || name == "" {
 		group := strings.Trim(name, "/")
-		allRepos := ctx.store.List(ctx.remote.Name)
+		allRepos := ctx.Data.Store.List(ctx.Data.Remote.Name)
 		var repos []*core.Repository
 		var items []string
 		for _, repo := range allRepos {
@@ -85,9 +110,9 @@ func getLocal(ctx *Context, name string) (*core.Repository, error) {
 	}
 
 	var err error
-	repo := ctx.store.GetByName(ctx.remote.Name, name)
+	repo := ctx.Data.Store.GetByName(ctx.Data.Remote.Name, name)
 	if repo == nil {
-		repo, err = core.CreateRepository(ctx.remote, name)
+		repo, err = core.CreateRepository(ctx.Data.Remote, name)
 		if err != nil {
 			return nil, errors.Trace(err, "create repository")
 		}
@@ -95,13 +120,13 @@ func getLocal(ctx *Context, name string) (*core.Repository, error) {
 	return repo, nil
 }
 
-func getCurrent(ctx *Context) (*core.Repository, error) {
+func getCurrent[Flags any](ctx *app.Context[Flags, Data]) (*core.Repository, error) {
 	path, err := git.EnsureCurrent()
 	if err != nil {
 		return nil, err
 	}
 
-	repo, err := ctx.store.GetByPath(path)
+	repo, err := ctx.Data.Store.GetByPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -111,11 +136,11 @@ func getCurrent(ctx *Context) (*core.Repository, error) {
 		return nil, err
 	}
 
-	ctx.remote = remote
+	ctx.Data.Remote = remote
 	return repo, nil
 }
 
-func apiSearch(ctx *Context, query string) (*api.Repository, error) {
+func apiSearch[Flags any](ctx *app.Context[Flags, Data], query string) (*api.Repository, error) {
 	if query == "" {
 		return nil, errors.New("please provide query statement")
 	}
@@ -132,7 +157,7 @@ func apiSearch(ctx *Context, query string) (*api.Repository, error) {
 
 	var repos []*api.Repository
 	var err error
-	err = execProvider(op, ctx.remote, func(p api.Provider) error {
+	err = execProvider(op, ctx.Data.Remote, func(p api.Provider) error {
 		repos, err = p.SearchRepositories(group, query)
 		return err
 	})
@@ -162,10 +187,10 @@ func apiSearch(ctx *Context, query string) (*api.Repository, error) {
 	return repos[idx], nil
 }
 
-func apiGet(ctx *Context, repo *core.Repository) (*api.Repository, error) {
+func apiGet[Flags any](ctx *app.Context[Flags, Data], repo *core.Repository) (*api.Repository, error) {
 	var remoteRepo *api.Repository
 	var err error
-	err = execProvider("get repository info", ctx.remote, func(p api.Provider) error {
+	err = execProvider("get repository info", ctx.Data.Remote, func(p api.Provider) error {
 		remoteRepo, err = p.GetRepository(repo.Name)
 		return err
 	})
@@ -184,4 +209,47 @@ func convertToGroups(repos []*core.Repository) []string {
 		groups = append(groups, group+"/")
 	}
 	return groups
+}
+
+func compRemote(_ []string) (*app.CompResult, error) {
+	remotes, err := core.ListRemoteNames()
+	return &app.CompResult{Items: remotes}, err
+}
+
+func listRepos(args []string) ([]*core.Repository, error) {
+	remote := args[0]
+	if remote == "" {
+		return nil, nil
+	}
+	store, err := core.NewRepositoryStorage()
+	if err != nil {
+		return nil, err
+	}
+	return store.List(remote), nil
+}
+
+func compRepo(args []string) (*app.CompResult, error) {
+	repos, err := listRepos(args)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]string, len(repos))
+	for i, repo := range repos {
+		items[i] = repo.Name
+	}
+
+	return &app.CompResult{Items: items}, nil
+}
+
+func compGroup(args []string) (*app.CompResult, error) {
+	repos, err := listRepos(args)
+	if err != nil {
+		return nil, err
+	}
+
+	return &app.CompResult{
+		Items: convertToGroups(repos),
+		Flag:  app.CompNoSpaceFlag,
+	}, nil
 }

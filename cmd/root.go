@@ -3,13 +3,14 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/fioncat/gitzombie/cmd/common"
-	"github.com/fioncat/gitzombie/cmd/gitops/branch"
-	"github.com/fioncat/gitzombie/cmd/repo"
+	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/scripts"
 	"github.com/spf13/cobra"
+
+	_ "github.com/fioncat/gitzombie/cmd/gitops"
+	_ "github.com/fioncat/gitzombie/cmd/repo"
 )
 
 var Root = &cobra.Command{
@@ -56,9 +57,7 @@ var initBash = &cobra.Command{
 }
 
 func init() {
-	common.Build[repo.Context](Root, &repo.App{})
-	common.Build[struct{}](Root, &branch.App{})
-
 	initCmd.AddCommand(initZsh, initBash)
 	Root.AddCommand(initCmd)
+	app.Root(Root)
 }

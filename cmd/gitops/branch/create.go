@@ -1,40 +1,42 @@
 package branch
 
 import (
-	"github.com/fioncat/gitzombie/cmd/common"
+	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/cmd/gitops"
 	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/spf13/cobra"
 )
 
-type Create struct {
-	noPush bool
-	remote string
+type CreateFlags struct {
+	NoPush bool
+	Remote string
 }
 
-func (b *Create) Use() string    { return "branch" }
-func (b *Create) Desc() string   { return "Create a branch" }
-func (b *Create) Action() string { return "create" }
+var Create = app.Register(&app.Command[CreateFlags, struct{}]{
+	Use:    "branch {name}",
+	Desc:   "Create a branch",
+	Action: "Create",
 
-func (b *Create) Prepare(cmd *cobra.Command) {
-	cmd.Flags().BoolVarP(&b.noPush, "no-push", "", false, "donot push to remote")
-	cmd.Flags().StringVarP(&b.remote, "remote", "r", "origin", "remote name")
-	cmd.RegisterFlagCompletionFunc("remote", common.Comp(gitops.CompRemote))
+	Prepare: func(cmd *cobra.Command, flags *CreateFlags) {
+		cmd.Flags().BoolVarP(&flags.NoPush, "no-push", "", false, "donot push to remote")
+		cmd.Flags().StringVarP(&flags.Remote, "remote", "r", "origin", "remote name")
+		cmd.RegisterFlagCompletionFunc("remote", app.Comp(gitops.CompRemote))
 
-	cmd.Args = cobra.ExactArgs(1)
-}
+		cmd.Args = cobra.ExactArgs(1)
+	},
 
-func (b *Create) Run(_ *struct{}, args common.Args) error {
-	name := args.Get(0)
-	err := git.Checkout(name, true, git.Default)
-	if err != nil {
-		return err
-	}
-	if !b.noPush {
-		err = git.Exec([]string{"push", "--set-upstream", b.remote, name}, git.Default)
+	Run: func(ctx *app.Context[CreateFlags, struct{}]) error {
+		name := ctx.Arg(0)
+		err := git.Checkout(name, true, git.Default)
 		if err != nil {
 			return err
 		}
-	}
-	return nil
-}
+		if !ctx.Flags.NoPush {
+			err = git.Exec([]string{"push", "--set-upstream", ctx.Flags.Remote, name}, git.Default)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	},
+})

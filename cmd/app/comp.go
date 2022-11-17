@@ -1,4 +1,4 @@
-package common
+package app
 
 import (
 	"github.com/fioncat/gitzombie/config"
@@ -17,7 +17,7 @@ var EmptyCompResult = &CompResult{
 	Flag: cobra.ShellCompDirectiveNoFileComp,
 }
 
-type CompAction func(args Args) (*CompResult, error)
+type CompAction func(args []string) (*CompResult, error)
 
 func Comp(actions ...CompAction) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if len(actions) == 0 {
@@ -34,7 +34,7 @@ func Comp(actions ...CompAction) func(cmd *cobra.Command, args []string, toCompl
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 		action := actions[idx]
-		result, err := action(Args(args))
+		result, err := action(args)
 		if err != nil {
 			term.Warn("complete: %v", err)
 			return nil, cobra.ShellCompDirectiveError

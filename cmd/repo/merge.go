@@ -7,7 +7,7 @@ import (
 
 	"github.com/dustin/go-humanize/english"
 	"github.com/fioncat/gitzombie/api"
-	"github.com/fioncat/gitzombie/cmd/common"
+	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/cmd/gitops"
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/core"
@@ -16,90 +16,93 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Merge struct {
-	upstream bool
+type MergeFlags struct {
+	Upstream bool
 
-	sourceBranch string
+	SourceBranch string
 }
 
-func (m *Merge) Use() string    { return "merge [-u] [-s source-branch] [target-branch]" }
-func (m *Merge) Desc() string   { return "Create or open MergeRequest (PR in Github)" }
-func (m *Merge) Action() string { return "" }
+var Merge = app.Register(&app.Command[MergeFlags, Data]{
+	Use:  "merge [-u] [-s source-branch] [target-branch]",
+	Desc: "Create or open MergeRequest (PR in Github)",
 
-func (m *Merge) Prepare(cmd *cobra.Command) {
-	cmd.Flags().BoolVarP(&m.upstream, "upstream", "u", false, "merge to upstream repo")
+	Init: initData[MergeFlags],
 
-	cmd.Flags().StringVarP(&m.sourceBranch, "source", "s", "", "source branch")
-	cmd.RegisterFlagCompletionFunc("source", common.Comp(gitops.CompLocalBranch))
+	Prepare: func(cmd *cobra.Command, flags *MergeFlags) {
+		cmd.Flags().BoolVarP(&flags.Upstream, "upstream", "u", false, "merge to upstream repo")
 
-	cmd.Args = cobra.MaximumNArgs(1)
-}
+		cmd.Flags().StringVarP(&flags.SourceBranch, "source", "s", "", "source branch")
+		cmd.RegisterFlagCompletionFunc("source", app.Comp(gitops.CompLocalBranch))
 
-func (m *Merge) Run(ctx *Context, args common.Args) error {
-	ctx.store.ReadOnly()
-	err := git.EnsureNoUncommitted(git.Default)
-	if err != nil {
-		return err
-	}
+		cmd.Args = cobra.MaximumNArgs(1)
+	},
 
-	repo, err := getCurrent(ctx)
-	if err != nil {
-		return err
-	}
+	Run: func(ctx *app.Context[MergeFlags, Data]) error {
+		ctx.Data.Store.ReadOnly()
+		err := git.EnsureNoUncommitted(git.Default)
+		if err != nil {
+			return err
+		}
 
-	apiRepo, err := apiGet(ctx, repo)
-	if err != nil {
-		return err
-	}
+		repo, err := getCurrent(ctx)
+		if err != nil {
+			return err
+		}
 
-	opts, err := m.buildOptions(apiRepo, args)
-	if err != nil {
-		return err
-	}
+		apiRepo, err := apiGet(ctx, repo)
+		if err != nil {
+			return err
+		}
 
-	var url string
-	err = execProvider("get merge", ctx.remote, func(p api.Provider) error {
-		url, err = p.GetMerge(repo, *opts)
-		return err
-	})
-	if err != nil {
-		return err
-	}
-	if url != "" {
+		opts, err := mergeBuildOptions(ctx, apiRepo)
+		if err != nil {
+			return err
+		}
+
+		var url string
+		err = execProvider("get merge", ctx.Data.Remote, func(p api.Provider) error {
+			url, err = p.GetMerge(repo, *opts)
+			return err
+		})
+		if err != nil {
+			return err
+		}
+		if url != "" {
+			return term.Open(url)
+		}
+
+		term.ConfirmExit("cannot find merge, do you want to create one")
+		title, body, err := mergeEditTitleAndBody(opts)
+		if err != nil {
+			return err
+		}
+		opts.Title = title
+		opts.Body = body
+
+		term.Print("")
+		term.Print("About to create merge:")
+		mergeShowInfo(repo, opts)
+		term.ConfirmExit("continue")
+
+		err = execProvider("create merge", ctx.Data.Remote, func(p api.Provider) error {
+			url, err = p.CreateMerge(repo, *opts)
+			return err
+		})
+		if err != nil {
+			return err
+		}
+
 		return term.Open(url)
-	}
+	},
+})
 
-	term.ConfirmExit("cannot find merge, do you want to create one")
-	title, body, err := m.editTitleAndBody(opts)
-	if err != nil {
-		return err
-	}
-	opts.Title = title
-	opts.Body = body
-
-	term.Print("")
-	term.Print("About to create merge:")
-	m.showInfo(repo, opts)
-	term.ConfirmExit("continue")
-
-	err = execProvider("create merge", ctx.remote, func(p api.Provider) error {
-		url, err = p.CreateMerge(repo, *opts)
-		return err
-	})
-	if err != nil {
-		return err
-	}
-
-	return term.Open(url)
-}
-
-func (m *Merge) buildOptions(apiRepo *api.Repository, args common.Args) (*api.MergeOption, error) {
-	tar := args.Get(0)
+func mergeBuildOptions(ctx *app.Context[MergeFlags, Data], apiRepo *api.Repository) (*api.MergeOption, error) {
+	tar := ctx.Arg(0)
 	if tar == "" {
 		tar = apiRepo.DefaultBranch
 	}
 
-	src := m.sourceBranch
+	src := ctx.Flags.SourceBranch
 	if src == "" {
 		cur, err := git.GetCurrentBranch(&git.Options{
 			QuietCmd: true,
@@ -111,7 +114,7 @@ func (m *Merge) buildOptions(apiRepo *api.Repository, args common.Args) (*api.Me
 	}
 
 	var up *api.Repository
-	if m.upstream {
+	if ctx.Flags.Upstream {
 		if apiRepo.Upstream == nil {
 			return nil, fmt.Errorf("repo %s does not have an upstream", apiRepo.Name)
 		}
@@ -140,7 +143,7 @@ After editing done, please quit this editor to continue.
 #
 `
 
-func (m *Merge) editTitleAndBody(opts *api.MergeOption) (string, string, error) {
+func mergeEditTitleAndBody(opts *api.MergeOption) (string, string, error) {
 	content := fmt.Sprintf(mergeEditContent, opts.SourceBranch,
 		opts.TargetBranch, opts.Upstream != nil)
 	content, err := term.EditContent(config.Get().Editor, content, "merge.md")
@@ -176,7 +179,7 @@ func (m *Merge) editTitleAndBody(opts *api.MergeOption) (string, string, error) 
 	return title, body, nil
 }
 
-func (m *Merge) showInfo(repo *core.Repository, opts *api.MergeOption) {
+func mergeShowInfo(repo *core.Repository, opts *api.MergeOption) {
 	lineCount := len(strings.Split(opts.Body, "\n"))
 	countWord := english.Plural(lineCount, "line", "")
 	var (
