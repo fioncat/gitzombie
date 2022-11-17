@@ -40,7 +40,7 @@ var List = app.Register(&app.Command[ListFlags, Data]{
 
 		repos := ctx.Data.Store.List(remoteName)
 		if ctx.Flags.Group {
-			groups := convertToGroups(repos)
+			groups := core.ConvertToGroups(repos)
 			for _, group := range groups {
 				fmt.Println(group)
 			}

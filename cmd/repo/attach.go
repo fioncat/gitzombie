@@ -16,7 +16,7 @@ var Attach = app.Register(&app.Command[struct{}, Data]{
 
 	Prepare: func(cmd *cobra.Command, _ *struct{}) {
 		cmd.Args = cobra.ExactArgs(2)
-		cmd.ValidArgsFunction = app.Comp(compRemote, compGroup)
+		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompGroup)
 	},
 
 	Run: func(ctx *app.Context[struct{}, Data]) error {

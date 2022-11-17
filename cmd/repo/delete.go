@@ -18,7 +18,7 @@ var Delete = app.Register(&app.Command[struct{}, Data]{
 
 	Prepare: func(cmd *cobra.Command, _ *struct{}) {
 		cmd.Args = cobra.ExactArgs(2)
-		cmd.ValidArgsFunction = app.Comp(compRemote, compRepo)
+		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompRepo)
 	},
 
 	Run: func(ctx *app.Context[struct{}, Data]) error {

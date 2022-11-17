@@ -2,7 +2,6 @@ package branch
 
 import (
 	"github.com/fioncat/gitzombie/cmd/app"
-	"github.com/fioncat/gitzombie/cmd/gitops"
 	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +19,7 @@ var Create = app.Register(&app.Command[CreateFlags, struct{}]{
 	Prepare: func(cmd *cobra.Command, flags *CreateFlags) {
 		cmd.Flags().BoolVarP(&flags.NoPush, "no-push", "", false, "donot push to remote")
 		cmd.Flags().StringVarP(&flags.Remote, "remote", "r", "origin", "remote name")
-		cmd.RegisterFlagCompletionFunc("remote", app.Comp(gitops.CompRemote))
+		cmd.RegisterFlagCompletionFunc("remote", app.Comp(app.CompGitRemote))
 
 		cmd.Args = cobra.ExactArgs(1)
 	},

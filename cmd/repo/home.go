@@ -25,7 +25,7 @@ var Home = app.Register(&app.Command[HomeFlags, Data]{
 
 	Prepare: func(cmd *cobra.Command, flags *HomeFlags) {
 		cmd.Args = cobra.RangeArgs(1, 2)
-		cmd.ValidArgsFunction = app.Comp(compRemote, compRepo)
+		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompRepo)
 		cmd.Flags().BoolVarP(&flags.Search, "search", "s", false, "search from remote")
 	},
 

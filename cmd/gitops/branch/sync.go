@@ -5,7 +5,6 @@ import (
 
 	"github.com/dustin/go-humanize/english"
 	"github.com/fioncat/gitzombie/cmd/app"
-	"github.com/fioncat/gitzombie/cmd/gitops"
 	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/term"
 	"github.com/spf13/cobra"
@@ -40,7 +39,7 @@ var Sync = app.Register(&app.Command[SyncFlags, SyncData]{
 	Prepare: func(cmd *cobra.Command, flags *SyncFlags) {
 		cmd.Flags().BoolVarP(&flags.NoDelete, "no-delete", "", false, "donot delete any branch")
 		cmd.Flags().StringVarP(&flags.Remote, "remote", "r", "origin", "remote name")
-		cmd.RegisterFlagCompletionFunc("remote", app.Comp(gitops.CompRemote))
+		cmd.RegisterFlagCompletionFunc("remote", app.Comp(app.CompGitRemote))
 	},
 
 	Init: func(ctx *app.Context[SyncFlags, SyncData]) error {

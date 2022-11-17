@@ -8,7 +8,6 @@ import (
 	"github.com/dustin/go-humanize/english"
 	"github.com/fioncat/gitzombie/api"
 	"github.com/fioncat/gitzombie/cmd/app"
-	"github.com/fioncat/gitzombie/cmd/gitops"
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/git"
@@ -32,7 +31,7 @@ var Merge = app.Register(&app.Command[MergeFlags, Data]{
 		cmd.Flags().BoolVarP(&flags.Upstream, "upstream", "u", false, "merge to upstream repo")
 
 		cmd.Flags().StringVarP(&flags.SourceBranch, "source", "s", "", "source branch")
-		cmd.RegisterFlagCompletionFunc("source", app.Comp(gitops.CompLocalBranch))
+		cmd.RegisterFlagCompletionFunc("source", app.Comp(app.CompGitLocalBranch))
 
 		cmd.Args = cobra.MaximumNArgs(1)
 	},
