@@ -1,15 +1,17 @@
 package repo
 
 import (
-	"errors"
 	"fmt"
 	"strings"
+
+	_ "embed"
 
 	"github.com/dustin/go-humanize/english"
 	"github.com/fioncat/gitzombie/api"
 	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/core"
+	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/term"
 	"github.com/spf13/cobra"
@@ -74,7 +76,7 @@ var Merge = app.Register(&app.Command[MergeFlags, Data]{
 		}
 
 		term.ConfirmExit("cannot find merge, do you want to create one")
-		title, body, err := mergeEditTitleAndBody(opts)
+		title, body, err := mergeEdit()
 		if err != nil {
 			return err
 		}
@@ -130,60 +132,67 @@ func mergeBuildOptions(ctx *app.Context[MergeFlags, Data], apiRepo *api.Reposito
 	}, nil
 }
 
-const mergeEditContent = `<!-- Please edit title and body for the new Merge.
-Merge Info:
-* Source Branch: %s
-* Target Branch: %s
-* Is Upstream:   %v
+//go:embed merge_edit.md
+var mergeEditContent string
 
-This file use markdown syntax, we will treat h1 title (starts with '#') as Merge's title.
-The rest content above h1 title (not include title itself) will be treated as Merge's body.
+const (
+	mergeEditCommentStart = "<!--"
+	mergeEditCommentEnd   = "-->"
+)
 
-After editing done, please quit this editor to continue.
--->
-
-#
-`
-
-func mergeEditTitleAndBody(opts *api.MergeOption) (string, string, error) {
-	content := fmt.Sprintf(mergeEditContent, opts.SourceBranch,
-		opts.TargetBranch, opts.Upstream != nil)
-	content, err := term.EditContent(config.Get().Editor, content, "merge.md")
+func mergeEdit() (string, string, error) {
+	content, err := term.EditContent(config.Get().Editor, mergeEditContent, "merge.md")
 	if err != nil {
 		return "", "", err
 	}
-
 	lines := strings.Split(content, "\n")
 	var (
-		title     string
-		bodyLines []string
+		scanTitle   bool = true
+		scanDiscard bool
 
-		scanBody bool
+		titleLines []string
+		bodyLines  []string
 	)
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "#") && !scanBody {
-			title = strings.TrimPrefix(line, "#")
-			scanBody = true
-			continue
-		}
-		if scanBody {
+		switch {
+		case scanTitle:
+			if strings.HasPrefix(line, mergeEditCommentStart) {
+				scanTitle = false
+				scanDiscard = true
+				continue
+			}
+			titleLines = append(titleLines, line)
+
+		case scanDiscard:
+			if strings.HasPrefix(line, mergeEditCommentEnd) {
+				scanDiscard = false
+				continue
+			}
+
+		default:
 			bodyLines = append(bodyLines, line)
 		}
 	}
+	title := strings.Join(titleLines, " ")
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return "", "", errors.New("merge title cannot be empty")
 	}
 	body := strings.Join(bodyLines, "\n")
 	body = strings.TrimSpace(body)
-
 	return title, body, nil
 }
 
 func mergeShowInfo(repo *core.Repository, opts *api.MergeOption) {
-	lineCount := len(strings.Split(opts.Body, "\n"))
-	countWord := english.Plural(lineCount, "line", "")
+	var lineDesc string
+	if opts.Body == "" {
+		lineDesc = "yellow|empty|"
+	} else {
+		lineCount := len(strings.Split(opts.Body, "\n"))
+		countWord := english.Plural(lineCount, "line", "")
+		lineDesc = fmt.Sprintf("green|%s|", countWord)
+	}
 	var (
 		src string
 		tar string
@@ -196,7 +205,7 @@ func mergeShowInfo(repo *core.Repository, opts *api.MergeOption) {
 		tar = fmt.Sprintf("magenta|%s|:greeen|%s|", opts.Upstream.Name, opts.TargetBranch)
 	}
 	term.Print(" * Title:  green|%s|", opts.Title)
-	term.Print(" * Body:   green|%s|", countWord)
+	term.Print(" * Body:   %s", lineDesc)
 	term.Print(" * Source: %s", src)
 	term.Print(" * Target: %s", tar)
 }
