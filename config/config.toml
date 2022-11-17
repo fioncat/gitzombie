@@ -1,0 +1,13 @@
+# workspace dir path, the repo will be cloned to here by default.
+# The env value will be expanded.
+workspace = "$HOME/dev/src"
+
+# playground path, the playgrounds will be stored here.
+# The env value will be expanded.
+playground = "$HOME/dev/play"
+
+# Search limit to call API.
+search_limit = 200
+
+# Default editor.
+editor = "vim"

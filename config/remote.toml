@@ -1,0 +1,28 @@
+# Default we use Github, you can modify to other VSC.
+host = "github.com"
+
+# Clone protocol, support "https", "ssh"
+protocol = "https"
+
+# TODO: please edit your user and email here.
+user = ""
+email = ""
+
+# The backend provider to call API, support "github", "gitlab"
+provider = "github"
+
+# The API access token.
+# Only required to do some operations that require authentication.
+# Like creating PullRequest.
+#
+# Docs:
+#   * Github: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
+#   * Gitlab: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html
+token = ""
+
+# Optional, for different groups, you can use different clone protocol or user email.
+[[groups]]
+name = "fioncat"
+protocol = "ssh"
+user = ""
+email = ""
