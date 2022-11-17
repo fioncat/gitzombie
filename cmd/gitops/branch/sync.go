@@ -81,6 +81,7 @@ var Sync = app.Register(&app.Command[SyncFlags, SyncData]{
 			}
 		}
 		term.Print("backup branch is magenta|%s|", ctx.Data.BackupBranch)
+		term.Print("")
 		return nil
 	},
 
