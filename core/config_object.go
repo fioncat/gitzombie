@@ -64,9 +64,11 @@ func getConfigObject[T any](name string, dir, otype, oext string, validate func(
 		return nil, errors.Trace(err, "parse %s file", otype)
 	}
 
-	err = validate(&val)
-	if err != nil {
-		return nil, errors.Trace(err, "validate %s %s", otype, name)
+	if validate != nil {
+		err = validate(&val)
+		if err != nil {
+			return nil, errors.Trace(err, "validate %s %s", otype, name)
+		}
 	}
 
 	return &val, nil

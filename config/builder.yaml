@@ -1,0 +1,30 @@
+# env:
+#   * REPO_NAME
+#   * REPO_BASE
+#   * REPO_GROUP
+#   * REPO_PATH
+#   * REPO_GROUP_PATH
+#   * REPO_USER
+#   * REPO_EMAIL
+#   * REPO_URL
+
+create:
+  - mkdir ${REPO_BASE}
+
+init:
+  git:
+    branch: "main"
+    user: "${REPO_USER}"
+    email: "${REPO_EMAIL}"
+    url: "${REPO_URL}"
+  steps:
+    - run: go mod init example/${REPO_BASE}
+    - file:
+        name: main.go
+        content: |
+          package main
+
+          func main() {
+
+          }
+    - run: mkdir pkg

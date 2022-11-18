@@ -11,7 +11,7 @@ import (
 )
 
 // colorPlaceholder is the color placeholder "color|**|" regex object.
-var colorPlaceholder = regexp.MustCompile(`(cyan|blue|red|yellow|magenta|green)\|[^\|]+\|`)
+var colorPlaceholder = regexp.MustCompile(`(cyan|blue|red|yellow|magenta|green|black)\|[^\|]+\|`)
 
 func Color(s string, args ...any) string {
 	msg := fmt.Sprintf(s, args...)
@@ -45,6 +45,9 @@ func colorString(s string) string {
 
 		case "green":
 			return color.GreenString(content)
+
+		case "black":
+			return color.BlackString(content)
 		}
 		return ph
 	})
@@ -73,5 +76,10 @@ func PrintError(err error) {
 
 func PrintOperation(msg string, args ...any) {
 	msg = fmt.Sprintf(msg, args...)
-	Print("=> blue|%s|", msg)
+	Print("yellow|>| blue|%s|", msg)
+}
+
+func PrintCmd(cmd string, args ...any) {
+	cmd = fmt.Sprintf(cmd, args...)
+	Print("yellow|=>| cyan|%s|", cmd)
 }

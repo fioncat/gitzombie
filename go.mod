@@ -8,6 +8,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/google/go-github/v48 v48.1.0
 	github.com/iancoleman/strcase v0.2.0
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/pelletier/go-toml/v2 v2.0.5
 	github.com/spf13/cobra v1.6.1
 	github.com/xanzy/go-gitlab v0.74.0
