@@ -106,6 +106,11 @@ func CompRemote(_ []string) (*CompResult, error) {
 	return &CompResult{Items: remotes}, err
 }
 
+func CompBuilder(_ []string) (*CompResult, error) {
+	names, err := core.ListBuilderNames()
+	return &CompResult{Items: names}, err
+}
+
 func CompRepo(args []string) (*CompResult, error) {
 	repos, err := compListRepos(args)
 	if err != nil {

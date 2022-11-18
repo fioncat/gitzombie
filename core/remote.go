@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 
+	"github.com/fioncat/gitzombie/pkg/osutil"
 	"github.com/fioncat/gitzombie/pkg/validate"
 )
 
@@ -74,6 +75,14 @@ func (r *Remote) GetUserEmail(repo *Repository) (string, string) {
 		}
 	}
 	return user, email
+}
+
+func (r *Remote) Setenv() error {
+	return osutil.Setenv(map[string]string{
+		"REMOTE_NAME":     r.Name,
+		"REMOTE_HOST":     r.Host,
+		"REMOTE_PROTOCOL": r.Protocol,
+	})
 }
 
 func (r *Remote) matchGroup(repo *Repository) *RemoteGroup {

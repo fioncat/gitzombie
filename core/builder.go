@@ -8,37 +8,23 @@ import (
 	"path/filepath"
 
 	"github.com/dustin/go-humanize/english"
+	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/exec"
 	"github.com/fioncat/gitzombie/pkg/osutil"
 	"github.com/fioncat/gitzombie/pkg/term"
+	"gopkg.in/yaml.v3"
 )
 
-var (
-	defaultBuilderCreate = []string{"mkdir -p ${REPO_BASE}"}
-	defaultBuilderGit    = &BuilderGit{
-		User:  "${REPO_USER}",
-		Email: "${REPO_EMAIL}",
-		URL:   "${REPO_URL}",
+var DefaultBuilder = func() *Builder {
+	data := []byte(config.DefaultBuilder)
+	var b Builder
+	err := yaml.Unmarshal(data, &b)
+	if err != nil {
+		panic("failed to parse defaultBuilder: " + err.Error())
 	}
-	defaultBuilderSteps = []*BuilderStep{
-		{Run: "touch .gitignore"},
-		{
-			File: &BuilderFile{
-				Name:    "README.md",
-				Content: "# ${REPO_BASE}",
-			},
-		},
-	}
-
-	DefaultBuilder = &Builder{
-		Create: defaultBuilderCreate,
-		Init: &BuilderInit{
-			Git:   defaultBuilderGit,
-			Steps: defaultBuilderSteps,
-		},
-	}
-)
+	return &b
+}()
 
 type Builder struct {
 	Create []string     `yaml:"create"`
@@ -245,8 +231,9 @@ func (b *Builder) runInitFile(repo *LocalRepository, file *BuilderFile) error {
 	var reader io.Reader
 	switch {
 	case file.Content != "":
+		content := os.ExpandEnv(file.Content)
 		var buffer bytes.Buffer
-		buffer.WriteString(file.Content)
+		buffer.WriteString(content)
 		reader = &buffer
 
 	case file.From != "":

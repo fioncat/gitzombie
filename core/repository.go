@@ -84,6 +84,18 @@ func (repo *Repository) FullName() string {
 	return fmt.Sprintf("%s:%s", repo.Remote, repo.Name)
 }
 
+func (repo *Repository) ToLocal() *LocalRepository {
+	return &LocalRepository{
+		Name: repo.Name,
+
+		Group: repo.group,
+		Base:  repo.base,
+
+		Path:      repo.Path,
+		GroupPath: filepath.Dir(repo.Path),
+	}
+}
+
 type RepositoryStorage struct {
 	repos []*Repository
 
