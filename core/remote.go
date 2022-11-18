@@ -2,14 +2,8 @@ package core
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/fioncat/gitzombie/config"
-	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/validate"
-	"github.com/pelletier/go-toml/v2"
 )
 
 type Remote struct {
@@ -39,56 +33,18 @@ type RemoteGroup struct {
 }
 
 func GetRemote(name string) (*Remote, error) {
-	filename := fmt.Sprintf("%s.toml", name)
-	path := config.BaseDir("remotes", filename)
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("cannot find remote %s", name)
+	return getConfigObject(name, "remotes", "remote", ".toml", func(remote *Remote) error {
+		err := validate.Do(remote)
+		if err != nil {
+			return err
 		}
-		return nil, errors.Trace(err, "read remote file")
-	}
-
-	var remote Remote
-	err = toml.Unmarshal(data, &remote)
-	if err != nil {
-		return nil, errors.Trace(err, "parse remote file")
-	}
-	remote.Name = name
-
-	err = validate.Do(&remote)
-	if err != nil {
-		return nil, errors.Trace(err, "validate remote configuration for %s", name)
-	}
-
-	return &remote, nil
+		remote.Name = name
+		return nil
+	})
 }
 
 func ListRemoteNames() ([]string, error) {
-	dir := config.BaseDir("remotes")
-	files, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, errors.Trace(err, "read remotes")
-	}
-	names := make([]string, 0, len(files))
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		name := file.Name()
-		ext := filepath.Ext(name)
-		if ext == ".toml" {
-			name = strings.TrimSuffix(name, ext)
-			if name != "" {
-				names = append(names, name)
-			}
-		}
-	}
-	return names, nil
+	return listConfigObjectNames("remotes", ".toml")
 }
 
 func (r *Remote) GetCloneURL(repo *Repository) (string, error) {
