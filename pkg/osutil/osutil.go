@@ -3,8 +3,26 @@ package osutil
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
+
+type Env map[string]string
+
+func (env Env) Expand(s string) string {
+	return os.Expand(s, func(key string) string {
+		if env == nil {
+			return key
+		}
+		return env[key]
+	})
+}
+
+func (env Env) SetCmd(cmd *exec.Cmd) {
+	for key, val := range env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, val))
+	}
+}
 
 func EnsureDir(dir string) error {
 	exists, err := DirExists(dir)

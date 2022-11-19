@@ -16,6 +16,7 @@ import (
 const (
 	tomlExt = ".toml"
 	yamlExt = ".yaml"
+	shExt   = ".sh"
 )
 
 func listConfigObjects(configType, configExt string) ([]string, error) {

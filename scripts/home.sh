@@ -21,6 +21,18 @@ _gz() {
 	COMPREPLY=()
 }
 
+gzp() {
+	local ret=$(gitzombie home play $@)
+	if [[ -d $ret ]]; then
+		cd $ret
+		return
+	fi
+}
+
+_gzp() {
+	gitzombie list play
+}
+
 complete -F _gz gz
 alias gzh="gz github"
 

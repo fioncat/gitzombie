@@ -9,9 +9,11 @@ import (
 	"github.com/fioncat/gitzombie/scripts"
 	"github.com/spf13/cobra"
 
+	_ "github.com/fioncat/gitzombie/cmd/delete"
 	_ "github.com/fioncat/gitzombie/cmd/edit"
 	_ "github.com/fioncat/gitzombie/cmd/gitops/branch"
 	_ "github.com/fioncat/gitzombie/cmd/gitops/tag"
+	_ "github.com/fioncat/gitzombie/cmd/local/play"
 	_ "github.com/fioncat/gitzombie/cmd/repo"
 )
 

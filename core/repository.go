@@ -12,6 +12,8 @@ import (
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/pkg/binary"
 	"github.com/fioncat/gitzombie/pkg/errors"
+	"github.com/fioncat/gitzombie/pkg/git"
+	"github.com/fioncat/gitzombie/pkg/osutil"
 	"github.com/fioncat/gitzombie/pkg/term"
 )
 
@@ -82,6 +84,70 @@ func (repo *Repository) normalize() error {
 
 func (repo *Repository) FullName() string {
 	return fmt.Sprintf("%s:%s", repo.Remote, repo.Name)
+}
+
+func (repo *Repository) Dir() string {
+	return filepath.Dir(repo.Path)
+}
+
+func (repo *Repository) EnsureDir() (string, error) {
+	dir := repo.Dir()
+	err := osutil.EnsureDir(dir)
+	return dir, err
+}
+
+func (repo *Repository) SetEnv(remote *Remote, env osutil.Env) error {
+	env["REPO_NAME"] = repo.Name
+	env["REPO_GROUP"] = repo.group
+	env["REPO_BASE"] = repo.base
+	env["REPO_REMOTE"] = repo.Remote
+	env["REPO_PATH"] = repo.Path
+	env["REPO_DIR"] = repo.Dir()
+
+	if remote != nil {
+		email, user := remote.GetUserEmail(repo)
+		url, err := remote.GetCloneURL(repo)
+		if err != nil {
+			return errors.Trace(err, "get clone url")
+		}
+
+		env["REMOTE_EMAIL"] = email
+		env["REMOTE_USER"] = user
+		env["REMOTE_URL"] = url
+	}
+	return nil
+}
+
+func NewLocalRepository(rootDir, name string) (*Repository, error) {
+	name = strings.Trim(name, "/")
+	group, base := SplitGroup(name)
+	if group == "" || name == "" {
+		return nil, fmt.Errorf("invalid repo name %q, must have a group", name)
+	}
+	path := filepath.Join(rootDir, name)
+
+	return &Repository{
+		Path:  path,
+		Name:  name,
+		group: group,
+		base:  base,
+	}, nil
+}
+
+func DiscoverLocalRepositories(rootDir string) ([]*Repository, error) {
+	dirs, err := git.Discover(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	repos := make([]*Repository, len(dirs))
+	for i, dir := range dirs {
+		repo, err := NewLocalRepository(rootDir, dir.Name)
+		if err != nil {
+			return nil, err
+		}
+		repos[i] = repo
+	}
+	return repos, nil
 }
 
 type RepositoryStorage struct {
