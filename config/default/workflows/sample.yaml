@@ -1,0 +1,9 @@
+select:
+  repos:
+    - github:fioncat/*
+  dirs:
+    - $HOME/.local/share/nvim/site/pack/packer
+
+jobs:
+  - name: "Fetch remote"
+    run: git fetch --all

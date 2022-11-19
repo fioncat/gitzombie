@@ -34,6 +34,7 @@ _gzp() {
 }
 
 complete -F _gz gz
+complete -F _gzp gzp
 alias gzh="gz github"
 
 alias gzb="gitzombie"
