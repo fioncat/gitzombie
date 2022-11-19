@@ -108,7 +108,7 @@ func NewRepositoryStorage() (*RepositoryStorage, error) {
 }
 
 func (s *RepositoryStorage) init() error {
-	path := config.LocalDir("data")
+	path := config.GetLocalDir("data")
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -218,7 +218,7 @@ func (s *RepositoryStorage) Close() error {
 	if s.readonly {
 		return nil
 	}
-	path := config.LocalDir("data")
+	path := config.GetLocalDir("data")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return errors.Trace(err, "open data file")

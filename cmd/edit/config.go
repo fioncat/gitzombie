@@ -13,7 +13,7 @@ var Config = app.Register(&app.Command[app.Empty, app.Empty]{
 	Action: "Edit",
 
 	RunNoContext: func() error {
-		path := config.BaseDir("config.toml")
+		path := config.GetDir("config.toml")
 		return Do(path, config.DefaultConfig, "config.toml", func(s string) error {
 			data := []byte(s)
 			var cfg config.Config

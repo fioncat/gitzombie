@@ -40,7 +40,7 @@ func Output(args []string, opts *Options) (string, error) {
 
 	cmdStr := fmt.Sprintf("git %s", strings.Join(args, " "))
 	if !opts.QuietCmd {
-		term.Print("==> cyan|%s|", cmdStr)
+		term.PrintCmd(cmdStr)
 	}
 
 	cmd := exec.Command("git", args...)
