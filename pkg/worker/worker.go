@@ -33,6 +33,9 @@ func New[T any](verb string, tasks []*Task[T]) *Worker[T] {
 }
 
 func (w *Worker[T]) Run(action Action[T]) []error {
+	if Count <= 0 {
+		Count = runtime.NumCPU()
+	}
 	taskChan := make(chan *Task[T], len(w.tasks))
 	errChan := make(chan error, len(w.tasks))
 

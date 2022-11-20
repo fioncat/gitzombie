@@ -36,6 +36,8 @@ func GetWorkflow(name string) (*Workflow, error) {
 type WorkflowMatchItem struct {
 	Path string
 	Env  osutil.Env
+
+	Repo *Repository
 }
 
 func (s *WorkflowSelect) Match(store *RepositoryStorage) ([]*WorkflowMatchItem, error) {
@@ -61,6 +63,7 @@ func (s *WorkflowSelect) Match(store *RepositoryStorage) ([]*WorkflowMatchItem, 
 			items = append(items, &WorkflowMatchItem{
 				Path: matchRepo.Path,
 				Env:  env,
+				Repo: matchRepo,
 			})
 		}
 	}
