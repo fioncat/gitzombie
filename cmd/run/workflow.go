@@ -3,9 +3,6 @@ package run
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
-	"time"
 
 	"github.com/dustin/go-humanize/english"
 	"github.com/fioncat/gitzombie/cmd/app"
@@ -69,7 +66,10 @@ var Workflow = app.Register(&app.Command[WorkflowFlags, app.Empty]{
 			return nil
 		}
 		if ctx.Flags.Edit {
-			items, err = workflowEditItems(items)
+			items, err = term.EditItems(config.Get().Editor, items,
+				func(item *core.WorkflowMatchItem) string {
+					return item.Path
+				})
 			if err != nil {
 				return err
 			}
@@ -111,44 +111,6 @@ func workflowRunCurrent(store *core.RepositoryStorage, wf *core.Workflow) error 
 	return nil
 }
 
-func workflowEditItems(items []*core.WorkflowMatchItem) ([]*core.WorkflowMatchItem, error) {
-	itemMap := make(map[string]*core.WorkflowMatchItem, len(items))
-	lines := make([]string, len(items))
-	for i, item := range items {
-		lines[i] = item.Path
-		itemMap[item.Path] = item
-	}
-	content := strings.Join(lines, "\n")
-	content, err := term.EditContent(config.Get().Editor, content, "items.txt")
-	if err != nil {
-		return nil, err
-	}
-	lines = strings.Split(content, "\n")
-
-	editedItems := make([]*core.WorkflowMatchItem, 0, len(lines))
-	set := make(map[string]struct{}, len(lines))
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		name := line
-		item := itemMap[name]
-		if item == nil {
-			return nil, fmt.Errorf("edit: cannot find item %q", name)
-		}
-		if _, ok := set[name]; ok {
-			continue
-		}
-		editedItems = append(editedItems, item)
-		set[name] = struct{}{}
-	}
-	if len(editedItems) == 0 {
-		return nil, errors.New("nothing to do after editing")
-	}
-	return editedItems, nil
-}
-
 func workflowRun(ctx *app.Context[WorkflowFlags, app.Empty], jobs []*core.Job, items []*core.WorkflowMatchItem) error {
 	tasks := make([]*worker.Task[core.WorkflowMatchItem], len(items))
 	for i, item := range items {
@@ -173,32 +135,24 @@ func workflowRun(ctx *app.Context[WorkflowFlags, app.Empty], jobs []*core.Job, i
 	term.Print("")
 
 	if len(errs) > 0 {
-		var sb strings.Builder
-		for i, err := range errs {
-			if jobErr, ok := err.(*core.JobError); ok {
-				header := fmt.Sprintf("=======> output of %q on %q: %v\n",
-					jobErr.Name, jobErr.Path, jobErr.Err)
-				sb.WriteString(header)
-				sb.WriteString(jobErr.Out)
-			} else {
-				content := fmt.Sprintf("=======> #%d error: %v\n", i, err)
-				sb.WriteString(content)
-			}
-			sb.WriteString("\n\n")
-		}
-		logPath := ctx.Flags.LogPath
-		if logPath == "" {
-			dateStr := time.Now().Format("2006-01-02_15:04:05")
-			logName := fmt.Sprintf("%s-%s", ctx.Arg(0), dateStr)
-			logPath = filepath.Join(os.TempDir(), "gitzombie", "workflows", logName)
-		}
-		err := osutil.WriteFile(logPath, []byte(sb.String()))
-		if err != nil {
-			return errors.Trace(err, "write log file")
-		}
-		errWord := english.Plural(len(errs), "error", "")
-		term.Print("write red|%s log| to green|%s|", errWord, logPath)
-		return fmt.Errorf("workflow failed with %s", errWord)
+		return worker.HandleErrors(errs, &worker.ErrorHandler{
+			Name: "workflow",
+
+			LogPath: ctx.Flags.LogPath,
+
+			Header: func(idx int, err error) string {
+				if jobErr, ok := err.(*core.JobError); ok {
+					return fmt.Sprintf("output of %q on %q: %v", jobErr.Name, jobErr.Path, jobErr.Err)
+				}
+				return fmt.Sprintf("%d error: %v", idx, err)
+			},
+			Content: func(_ int, err error) string {
+				if jobErr, ok := err.(*core.JobError); ok {
+					return jobErr.Out
+				}
+				return ""
+			},
+		})
 	}
 
 	term.Print("workflow blue|%s| done", ctx.Arg(0))

@@ -1,13 +1,14 @@
 package gitlab
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/fioncat/gitzombie/api"
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/core"
+	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -69,6 +70,43 @@ func (p *Provider) SearchRepositories(group, query string) ([]*api.Repository, e
 	}
 
 	return repos, nil
+}
+
+func (p *Provider) ListRepositories(group string) ([]*api.Repository, error) {
+	_, resp, err := p.cli.Groups.GetGroup(group, &gitlab.GetGroupOptions{
+		WithProjects: gitlab.Bool(true),
+	})
+	if err = p.wrapResp(group, resp, err); err != nil {
+		return nil, err
+	}
+
+	var page int = 1
+	var repos []*api.Repository
+	for {
+		prjs, _, err := p.cli.Groups.ListGroupProjects(group, &gitlab.ListGroupProjectsOptions{
+			ListOptions: gitlab.ListOptions{
+				Page:    page,
+				PerPage: config.Get().SearchLimit,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		page++
+
+		if len(prjs) == 0 {
+			return repos, nil
+		}
+
+		for _, prj := range prjs {
+			repo, err := p.convertRepo(prj)
+			if err != nil {
+				return nil, errors.Trace(err, "parse repo %q", prj.NameWithNamespace)
+			}
+			repos = append(repos, repo)
+		}
+		time.Sleep(time.Millisecond * 50)
+	}
 }
 
 func (p *Provider) GetRepository(name string) (*api.Repository, error) {

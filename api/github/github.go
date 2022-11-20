@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/fioncat/gitzombie/api"
 	"github.com/fioncat/gitzombie/config"
@@ -73,6 +74,34 @@ func (p *Provider) SearchRepositories(group, query string) ([]*api.Repository, e
 		repos[i] = repo
 	}
 	return repos, nil
+}
+
+func (p *Provider) ListRepositories(group string) ([]*api.Repository, error) {
+	var page int = 1
+	var repos []*api.Repository
+	for {
+		githubRepos, _, err := p.cli.Repositories.List(p.ctx, group,
+			&github.RepositoryListOptions{
+				ListOptions: github.ListOptions{
+					PerPage: config.Get().SearchLimit,
+					Page:    page,
+				},
+			})
+		if err != nil {
+			return nil, err
+		}
+		page++
+
+		if len(githubRepos) == 0 {
+			return repos, nil
+		}
+
+		for _, githubRepo := range githubRepos {
+			repo := p.convertRepo(githubRepo)
+			repos = append(repos, repo)
+		}
+		time.Sleep(time.Millisecond * 50)
+	}
 }
 
 func (p *Provider) GetRepository(name string) (*api.Repository, error) {
