@@ -36,6 +36,7 @@ type MergeOption struct {
 type Provider interface {
 	Name() string
 	SearchRepositories(group, query string) ([]*Repository, error)
+	ListRepositories(group string) ([]*Repository, error)
 	GetRepository(name string) (*Repository, error)
 
 	GetMerge(repo *core.Repository, opts MergeOption) (string, error)

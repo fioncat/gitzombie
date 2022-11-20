@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/osutil"
@@ -53,4 +54,43 @@ func Edit(editor, path string) error {
 		return fmt.Errorf("edit failed: %v", err)
 	}
 	return nil
+}
+
+func EditItems[T any](editor string, items []*T, getKey func(*T) string) ([]*T, error) {
+	itemMap := make(map[string]*T, len(items))
+	lines := make([]string, len(items))
+	for i, item := range items {
+		key := getKey(item)
+		lines[i] = key
+		itemMap[key] = item
+	}
+	content := strings.Join(lines, "\n")
+	content, err := EditContent(editor, content, "items.txt")
+	if err != nil {
+		return nil, err
+	}
+	lines = strings.Split(content, "\n")
+
+	editedItems := make([]*T, 0, len(lines))
+	set := make(map[string]struct{}, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		name := line
+		item := itemMap[name]
+		if item == nil {
+			return nil, fmt.Errorf("edit: cannot find item %q", name)
+		}
+		if _, ok := set[name]; ok {
+			continue
+		}
+		editedItems = append(editedItems, item)
+		set[name] = struct{}{}
+	}
+	if len(editedItems) == 0 {
+		return nil, errors.New("nothing to do after editing")
+	}
+	return editedItems, nil
 }
