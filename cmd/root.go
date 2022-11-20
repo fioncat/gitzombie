@@ -2,17 +2,23 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/pkg/errors"
+	"github.com/fioncat/gitzombie/pkg/term"
+	"github.com/fioncat/gitzombie/pkg/worker"
 	"github.com/fioncat/gitzombie/scripts"
 	"github.com/spf13/cobra"
 
+	_ "github.com/fioncat/gitzombie/cmd/delete"
 	_ "github.com/fioncat/gitzombie/cmd/edit"
 	_ "github.com/fioncat/gitzombie/cmd/gitops/branch"
 	_ "github.com/fioncat/gitzombie/cmd/gitops/tag"
+	_ "github.com/fioncat/gitzombie/cmd/local/play"
 	_ "github.com/fioncat/gitzombie/cmd/repo"
+	_ "github.com/fioncat/gitzombie/cmd/run"
 )
 
 var Root = &cobra.Command{
@@ -62,4 +68,7 @@ func init() {
 	initCmd.AddCommand(initZsh, initBash)
 	Root.AddCommand(initCmd)
 	app.Root(Root)
+
+	Root.PersistentFlags().BoolVarP(&term.AlwaysYes, "yes", "", false, "donot confirm")
+	Root.PersistentFlags().IntVarP(&worker.Count, "worker", "", runtime.NumCPU(), "number of workers")
 }

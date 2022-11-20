@@ -19,7 +19,7 @@ func EditContent(editor, content string, name string) (string, error) {
 	}
 
 	path := filepath.Join(tmpDir, name)
-	err = os.WriteFile(path, []byte(content), 0644)
+	err = osutil.WriteFile(path, []byte(content))
 	if err != nil {
 		return "", errors.Trace(err, "write tmp file to edit")
 	}

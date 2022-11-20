@@ -24,7 +24,7 @@ var Remote = app.Register(&app.Command[app.Empty, app.Empty]{
 
 	Run: func(ctx *app.Context[app.Empty, app.Empty]) error {
 		name := fmt.Sprintf("%s.toml", ctx.Arg(0))
-		path := config.BaseDir("remotes", name)
+		path := config.GetDir("remotes", name)
 		return Do(path, config.DefaultRemote, name, func(s string) error {
 			data := []byte(s)
 			var remote core.Remote

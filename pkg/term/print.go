@@ -73,5 +73,10 @@ func PrintError(err error) {
 
 func PrintOperation(msg string, args ...any) {
 	msg = fmt.Sprintf(msg, args...)
-	Print("=> blue|%s|", msg)
+	Print("yellow|=>| %s", msg)
+}
+
+func PrintCmd(cmd string, args ...any) {
+	cmd = fmt.Sprintf(cmd, args...)
+	Print("yellow|=>| cyan|%s|", cmd)
 }

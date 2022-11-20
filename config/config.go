@@ -106,10 +106,10 @@ func getDir(dir string, names ...string) string {
 	return filepath.Join(names...)
 }
 
-func BaseDir(names ...string) string {
+func GetDir(names ...string) string {
 	return getDir(baseDir, names...)
 }
 
-func LocalDir(names ...string) string {
+func GetLocalDir(names ...string) string {
 	return getDir(localDir, names...)
 }

@@ -1,0 +1,27 @@
+create:
+  - name: "Create repo"
+    run: mkdir -p ${REPO_BASE}
+
+files:
+  - name: "README.md"
+    content: |
+      # ${REPO_BASE}
+
+      ${REPO_NAME} created by gitzombie.
+  - name: ".gitignore"
+    content: ""
+
+init:
+  - name: "Init git"
+    run: git init
+  - name: "Init git user and email"
+    require_env:
+      - REPO_USER
+      - REPO_EMAIL
+    run: |
+      git config user.name ${REPO_USER}
+      git config user.email ${REPO_EMAIL}
+  - name: "Init git remote"
+    require_env:
+      - REPO_URL
+    run: git remote add origin ${REPO_URL}
