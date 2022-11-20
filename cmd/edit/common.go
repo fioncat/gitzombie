@@ -31,9 +31,11 @@ func Do(path, defaultContent, name string, validate func(s string) error) error 
 	if err != nil {
 		return err
 	}
-	err = validate(content)
-	if err != nil {
-		return errors.Trace(err, "validate edit content")
+	if validate != nil {
+		err = validate(content)
+		if err != nil {
+			return errors.Trace(err, "validate edit content")
+		}
 	}
 
 	return errors.Trace(osutil.WriteFile(path, []byte(content)), "write file")

@@ -75,8 +75,8 @@ var Workflow = app.Register(&app.Command[WorkflowFlags, app.Empty]{
 			}
 		}
 
-		repoWord := english.Plural(len(items), "repo", "")
-		term.ConfirmExit("Do you want to run workflow green|%s| on %s", ctx.Arg(0), repoWord)
+		repoWord := english.Plural(len(items), "repo", "repos")
+		term.ConfirmExit("Do you want to run workflow blue|%s| on %s", ctx.Arg(0), repoWord)
 
 		return workflowRun(ctx, wf.Jobs, items)
 	},
@@ -201,6 +201,6 @@ func workflowRun(ctx *app.Context[WorkflowFlags, app.Empty], jobs []*core.Job, i
 		return fmt.Errorf("workflow failed with %s", errWord)
 	}
 
-	term.Print("workflow green|%s| done", ctx.Arg(0))
+	term.Print("workflow blue|%s| done", ctx.Arg(0))
 	return nil
 }
