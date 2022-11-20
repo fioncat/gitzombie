@@ -2,7 +2,7 @@ package git
 
 import (
 	"fmt"
-	"io/fs"
+	"os"
 	"path/filepath"
 
 	"github.com/fioncat/gitzombie/pkg/errors"
@@ -16,35 +16,41 @@ type DiscoverDir struct {
 
 func Discover(rootDir string) ([]*DiscoverDir, error) {
 	if !filepath.IsAbs(rootDir) {
-		return nil, fmt.Errorf("require aps path, found %q", rootDir)
+		return nil, fmt.Errorf("require abs path, found %q", rootDir)
 	}
+	stack := []string{rootDir}
 	var dirs []*DiscoverDir
-	err := filepath.WalkDir(rootDir, func(path string, info fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			return nil
-		}
+	for len(stack) > 0 {
+		cur := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
 
-		gitDir := filepath.Join(path, ".git")
-		exists, err := osutil.DirExists(gitDir)
+		es, err := os.ReadDir(cur)
 		if err != nil {
-			return errors.Trace(err, "check exists for %q", gitDir)
+			return nil, err
 		}
-		if !exists {
-			return nil
+		for _, e := range es {
+			if !e.IsDir() {
+				continue
+			}
+			dir := filepath.Join(cur, e.Name())
+			gitDir := filepath.Join(dir, ".git")
+			exists, err := osutil.DirExists(gitDir)
+			if err != nil {
+				return nil, errors.Trace(err, "check git dir")
+			}
+			if exists {
+				name, err := filepath.Rel(rootDir, dir)
+				if err != nil {
+					return nil, errors.Trace(err, "convert rel path")
+				}
+				dirs = append(dirs, &DiscoverDir{
+					Name: name,
+					Path: dir,
+				})
+				continue
+			}
+			stack = append(stack, dir)
 		}
-
-		name, err := filepath.Rel(rootDir, path)
-		if err != nil {
-			return errors.Trace(err, "convert rel path")
-		}
-		dirs = append(dirs, &DiscoverDir{
-			Name: name,
-			Path: path,
-		})
-		return nil
-	})
-	return dirs, err
+	}
+	return dirs, nil
 }

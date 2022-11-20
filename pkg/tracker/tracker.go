@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 )
 
 const (
-	renderInterval = time.Millisecond * 50
+	renderInterval = time.Millisecond * 250
 )
 
 type Tracker struct {
@@ -78,26 +79,35 @@ func (t *Tracker) render() {
 		running = append(running, task)
 	}
 	t.running = running
-	if t.lastRunningCount > 0 {
-		fmt.Fprint(os.Stderr, text.CursorUp.Sprintn(t.lastRunningCount))
+
+	var out strings.Builder
+	out.Grow(t.lastRunningCount)
+
+	for t.lastRunningCount > 0 {
+		out.WriteString(text.CursorUp.Sprint())
+		out.WriteString(text.EraseLine.Sprint())
+		t.lastRunningCount--
 	}
 	t.lastRunningCount = len(running)
 
 	for _, task := range dones {
 		t.done++
 		doneStr := fmt.Sprintf(t.doneFmt, t.done)
-		fmt.Fprint(os.Stderr, text.EraseLine.Sprintn(t.lastRunningCount))
+		var line string
 		if task.fail {
-			term.Print("red|(%s/%d)| %s failed", doneStr, t.total, task.name)
+			line = fmt.Sprintf("red|(%s/%d)| %s failed\n", doneStr, t.total, task.name)
 		} else {
-			term.Print("green|(%s/%d)| %s done", doneStr, t.total, task.name)
+			line = fmt.Sprintf("green|(%s/%d)| %s done\n", doneStr, t.total, task.name)
 		}
+		out.WriteString(line)
 	}
 
 	for _, task := range running {
-		fmt.Fprint(os.Stderr, text.EraseLine.Sprintn(t.lastRunningCount))
-		term.Print("yellow|%s| %s", t.verb, task.name)
+		line := fmt.Sprintf("yellow|%s| %s\n", t.verb, task.name)
+		out.WriteString(line)
 	}
+	lines := term.Color(out.String())
+	fmt.Fprint(os.Stderr, lines)
 }
 
 func (t *Tracker) Start(name string) {

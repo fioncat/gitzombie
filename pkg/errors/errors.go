@@ -11,8 +11,8 @@ func New(msg string) error {
 }
 
 type Error struct {
-	ops []string
-	err error
+	stack []string
+	err   error
 }
 
 type Extra interface {
@@ -25,14 +25,18 @@ func Trace(err error, op string, args ...any) error {
 	}
 	op = fmt.Sprintf(op, args...)
 	if eo, ok := err.(*Error); ok {
-		eo.ops = append(eo.ops, op)
+		eo.stack = append(eo.stack, op)
 		return eo
 	}
-	return &Error{ops: []string{op}, err: err}
+	return &Error{stack: []string{op}, err: err}
 }
 
 func (err *Error) Error() string {
-	op := strings.Join(err.ops, ": ")
+	ops := make([]string, 0, len(err.stack))
+	for i := len(err.stack) - 1; i >= 0; i-- {
+		ops = append(ops, err.stack[i])
+	}
+	op := strings.Join(ops, ": ")
 	return fmt.Sprintf("%s: %v", op, err.err)
 }
 

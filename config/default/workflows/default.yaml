@@ -1,0 +1,7 @@
+select:
+  repos:
+    - github:*
+
+jobs:
+  - name: "Fetch remote"
+    run: git fetch --all

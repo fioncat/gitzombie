@@ -10,3 +10,6 @@ var DefaultRemote string
 
 //go:embed default/builder.yaml
 var DefaultBuilder string
+
+//go:embed default/workflows/default.yaml
+var DefaultWorkflow string

@@ -111,6 +111,11 @@ func CompBuilder(_ []string) (*CompResult, error) {
 	return &CompResult{Items: names}, err
 }
 
+func CompWorkflow(_ []string) (*CompResult, error) {
+	names, err := core.ListWorkflowNames()
+	return &CompResult{Items: names}, err
+}
+
 func CompRepo(args []string) (*CompResult, error) {
 	repos, err := compListRepos(args)
 	if err != nil {
