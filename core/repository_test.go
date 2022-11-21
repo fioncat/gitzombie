@@ -66,7 +66,7 @@ func buildTestRepos(n int) []*Repository {
 			Name:   name,
 			Path:   filepath.Join("/path/to/repo", name),
 			Remote: "test",
-			View:   uint64(i),
+			Access: uint64(i),
 		}
 	}
 	return repos
