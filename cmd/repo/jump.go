@@ -99,7 +99,7 @@ func jumpSelectRepo(repos []*core.Repository, ctx *app.Context[JumpFlags, JumpDa
 	}
 
 	for _, repo := range repos {
-		if strings.Contains(repo.Name, query) {
+		if strings.Contains(repo.Base(), query) {
 			ctx.Data.KeywordStore.Add(query)
 			return repo
 		}

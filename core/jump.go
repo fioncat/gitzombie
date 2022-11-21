@@ -14,6 +14,8 @@ import (
 
 const jumpKeywordName = "jump_keyword"
 
+var jumpKeywordExpireSeconds = daySeconds
+
 type JumpKeywordStorage struct {
 	data map[string]int64
 
@@ -39,7 +41,7 @@ func (s *JumpKeywordStorage) isOutDate(seconds int64) bool {
 	if delta <= 0 {
 		return true
 	}
-	return delta >= weekSeconds
+	return delta >= jumpKeywordExpireSeconds
 }
 
 func (s *JumpKeywordStorage) Add(kw string) {
