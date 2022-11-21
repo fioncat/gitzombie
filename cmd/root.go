@@ -47,8 +47,8 @@ var initZsh = &cobra.Command{
 	Short: "Print init scripts, you can add `source <(gitzombie init zsh)` to your profile",
 
 	RunE: func(_ *cobra.Command, _ []string) error {
+		fmt.Println(scripts.Common)
 		fmt.Println(scripts.ZshComp)
-		fmt.Println(scripts.Home)
 		return nil
 	},
 }
@@ -58,8 +58,8 @@ var initBash = &cobra.Command{
 	Short: "Print init scripts, you can add `source <(gitzombie init bash)` to your profile",
 
 	RunE: func(_ *cobra.Command, _ []string) error {
+		fmt.Println(scripts.Common)
 		fmt.Println(scripts.BashComp)
-		fmt.Println(scripts.Home)
 		return nil
 	},
 }

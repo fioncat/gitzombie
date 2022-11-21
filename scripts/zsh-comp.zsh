@@ -1,7 +1,3 @@
-#compdef gitzombie
-
-# zsh completion for gitzombie                            -*- shell-script -*-
-
 __gitzombie_debug()
 {
     local file="$BASH_COMP_DEBUG_FILE"
@@ -44,7 +40,7 @@ _gitzombie()
     fi
 
     # Prepare the command to obtain completions
-    requestComp="${words[1]} __complete ${words[2,-1]}"
+    requestComp="gitzombie __complete ${words[2,-1]}"
     if [ "${lastChar}" = "" ]; then
         # If the last parameter is complete (there is a space following it)
         # We add an extra empty parameter so we can indicate this to the go completion code.
@@ -205,4 +201,4 @@ if [ "$funcstack[1]" = "_gitzombie" ]; then
 fi
 
 compdef _gitzombie gitzombie
-
+compdef _gitzombie zb

@@ -8,5 +8,5 @@ var ZshComp string
 //go:embed bash-comp.sh
 var BashComp string
 
-//go:embed home.sh
-var Home string
+//go:embed common.sh
+var Common string
