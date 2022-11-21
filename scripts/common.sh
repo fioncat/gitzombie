@@ -1,12 +1,12 @@
-zb() {
-	zb_out=$(gitzombie $@)
+gz() {
+	gz_out=$(gitzombie $@)
 	ret_code=$?
-	if [[ ! -z $zb_out ]]; then
-		if [[ -d $zb_out ]]; then
-			cd $zb_out
+	if [[ ! -z $gz_out ]]; then
+		if [[ -d $gz_out ]]; then
+			cd $gz_out
 			return
 		fi
-		echo $zb_out
+		echo $gz_out
 	fi
 	return $ret_code
 }
