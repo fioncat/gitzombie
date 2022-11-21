@@ -10,3 +10,4 @@ alias gze="gz edit"
 alias gzk="gz switch"
 
 alias zz="gz jump"
+alias zh="gz jump -r github"
