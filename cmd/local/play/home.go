@@ -10,9 +10,8 @@ import (
 )
 
 var Home = app.Register(&app.Command[app.Empty, app.Empty]{
-	Use:    "play [name]",
-	Desc:   "Print the home of a playground",
-	Action: "Home",
+	Use:  "play [name]",
+	Desc: "Enter a playground",
 
 	PrepareNoFlag: func(cmd *cobra.Command) {
 		cmd.Args = cobra.MaximumNArgs(1)

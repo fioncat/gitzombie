@@ -3,10 +3,18 @@ package scripts
 import _ "embed"
 
 //go:embed zsh-comp.zsh
-var ZshComp string
+var zshComp string
 
 //go:embed bash-comp.sh
-var BashComp string
+var bashComp string
 
-//go:embed home.sh
-var Home string
+//go:embed common.sh
+var Common string
+
+//go:embed alias.sh
+var Alias string
+
+var Comps = map[string]string{
+	"zsh":  zshComp,
+	"bash": bashComp,
+}

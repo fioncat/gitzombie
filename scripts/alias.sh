@@ -1,0 +1,13 @@
+alias gzh="gz home"
+alias gzp="gz play"
+alias gzm="gz merge"
+alias gzo="gz open"
+alias gzs="gz sync branch"
+alias gzc="gz create"
+alias gzd="gz delete"
+alias gzr="gz run"
+alias gze="gz edit"
+alias gzk="gz switch"
+
+alias zz="gz jump"
+alias zh="gz jump -r github"

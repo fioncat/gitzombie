@@ -64,7 +64,7 @@ func Warn(msg string, args ...any) {
 }
 
 func PrintError(err error) {
-	msg := fmt.Sprintf("red|fatal:| %v", err)
+	msg := fmt.Sprintf("red|error:| %v", err)
 	Print(msg)
 	if ext, ok := err.(errors.Extra); ok {
 		ext.Extra()

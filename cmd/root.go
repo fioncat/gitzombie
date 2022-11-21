@@ -42,31 +42,30 @@ var initCmd = &cobra.Command{
 	Short: "Print init scripts",
 }
 
-var initZsh = &cobra.Command{
-	Use:   "zsh",
-	Short: "Print init scripts, you can add `source <(gitzombie init zsh)` to your profile",
+var noAlias bool
 
-	RunE: func(_ *cobra.Command, _ []string) error {
-		fmt.Println(scripts.ZshComp)
-		fmt.Println(scripts.Home)
-		return nil
-	},
-}
+func addInitCommand(shell string) {
+	cmd := &cobra.Command{
+		Use:   shell,
+		Short: fmt.Sprintf("Print init scripts, you can add `source <(gitzombie init %s)` to your profile", shell),
 
-var initBash = &cobra.Command{
-	Use:   "bash",
-	Short: "Print init scripts, you can add `source <(gitzombie init bash)` to your profile",
-
-	RunE: func(_ *cobra.Command, _ []string) error {
-		fmt.Println(scripts.BashComp)
-		fmt.Println(scripts.Home)
-		return nil
-	},
+		Run: func(_ *cobra.Command, _ []string) {
+			fmt.Println(scripts.Common)
+			fmt.Println(scripts.Comps[shell])
+			if !noAlias {
+				fmt.Println(scripts.Alias)
+			}
+		},
+	}
+	cmd.Flags().BoolVarP(&noAlias, "no-alias", "", false, "disable alias")
+	initCmd.AddCommand(cmd)
 }
 
 func init() {
-	initCmd.AddCommand(initZsh, initBash)
+	addInitCommand("zsh")
+	addInitCommand("bash")
 	Root.AddCommand(initCmd)
+
 	app.Root(Root)
 
 	Root.PersistentFlags().BoolVarP(&term.AlwaysYes, "yes", "", false, "donot confirm")

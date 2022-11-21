@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/pkg/errors"
@@ -32,12 +33,15 @@ type Repository struct {
 	Name   string
 	Remote string
 
-	View uint64
+	LastAccess int64
+	Access     uint64
 
 	workspace bool
 
 	group string
 	base  string
+
+	score uint64
 }
 
 func WorkspaceRepository(remote *Remote, name string) (*Repository, error) {
@@ -124,6 +128,67 @@ func (repo *Repository) SetEnv(remote *Remote, env osutil.Env) error {
 	return nil
 }
 
+func (repo *Repository) MarkAccess() {
+	repo.Access++
+	repo.LastAccess = time.Now().Unix()
+}
+
+var (
+	hourSeconds int64 = int64(time.Hour.Seconds())
+	daySeconds  int64 = hourSeconds * 24
+	weekSeconds int64 = daySeconds * 7
+
+	hourFactor  uint64 = 16
+	dayFactor   uint64 = 8
+	weekFactor  uint64 = 2
+	otherFactor uint64 = 1
+)
+
+// calculate score for a repo. The algorithm comes from:
+//
+//	https://github.com/ajeetdsouza/zoxide/wiki/Algorithm
+//
+// Each repo is assigned a access count, starting with 1 the
+// first time it is accessed.
+// Every repo access increases the access count by 1. When
+// a query is made, we calculate score based on the last time
+// the repo was accessed:
+//   - Last access within the last hour: score = access * 16
+//   - Last access within the last day:  score = access * 8
+//   - Last access within the last week: score = access * 2
+//   - Last access more that one week:   score = access
+func (repo *Repository) Score() uint64 {
+	now := time.Now().Unix()
+	delta := now - repo.LastAccess
+	if delta <= 0 {
+		return 0
+	}
+	var factor uint64
+	switch {
+	case delta <= hourSeconds:
+		factor = hourFactor
+
+	case delta <= daySeconds:
+		factor = dayFactor
+
+	case delta <= weekSeconds:
+		factor = weekFactor
+
+	default:
+		factor = otherFactor
+	}
+	return repo.Access * factor
+}
+
+func SortRepositories(repos []*Repository) {
+	for _, repo := range repos {
+		repo.score = repo.Score()
+	}
+	sort.Slice(repos, func(i, j int) bool {
+		return repos[i].score > repos[j].score
+	})
+}
+
 func NewLocalRepository(rootDir, name string) (*Repository, error) {
 	name = strings.Trim(name, "/")
 	group, base := SplitGroup(name)
@@ -156,6 +221,8 @@ func DiscoverLocalRepositories(rootDir string) ([]*Repository, error) {
 	return repos, nil
 }
 
+const repoStorageName = "repo"
+
 type RepositoryStorage struct {
 	repos []*Repository
 
@@ -180,7 +247,7 @@ func NewRepositoryStorage() (*RepositoryStorage, error) {
 }
 
 func (s *RepositoryStorage) init() error {
-	path := config.GetLocalDir("meta")
+	path := config.GetLocalDir(repoStorageName)
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -193,7 +260,7 @@ func (s *RepositoryStorage) init() error {
 
 	repos, err := s.read(file)
 	if err != nil {
-		return &readRepositoryError{
+		return &parseRepositoryStorageError{
 			path: path,
 			err:  err,
 		}
@@ -204,10 +271,10 @@ func (s *RepositoryStorage) init() error {
 		return nil
 	}
 
-	s.sort()
+	SortRepositories(repos)
 	for _, repo := range s.repos {
 		if _, ok := s.pathIndex[repo.Path]; ok {
-			return &readRepositoryError{
+			return &parseRepositoryStorageError{
 				path: path,
 				err:  fmt.Errorf("path %q is duplicate", path),
 			}
@@ -220,7 +287,7 @@ func (s *RepositoryStorage) init() error {
 			s.nameIndex[repo.Remote] = repoMap
 		}
 		if _, ok := repoMap[repo.Name]; ok {
-			return &readRepositoryError{
+			return &parseRepositoryStorageError{
 				path: path,
 				err:  fmt.Errorf("repo %s is duplicate", repo.FullName()),
 			}
@@ -273,7 +340,7 @@ func (s *RepositoryStorage) Close() error {
 	if s.readonly {
 		return nil
 	}
-	path := config.GetLocalDir("meta")
+	path := config.GetLocalDir(repoStorageName)
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return errors.Trace(err, "open data file")
@@ -291,12 +358,6 @@ func (s *RepositoryStorage) write(file *os.File) error {
 	}
 	encoder := gob.NewEncoder(file)
 	return errors.Trace(encoder.Encode(&s.repos), "encode repo")
-}
-
-func (s *RepositoryStorage) sort() {
-	sort.Slice(s.repos, func(i, j int) bool {
-		return s.repos[i].View > s.repos[j].View
-	})
 }
 
 func (s *RepositoryStorage) Add(repo *Repository) error {
@@ -379,16 +440,16 @@ func (s *RepositoryStorage) ReadOnly() {
 	s.readonly = true
 }
 
-type readRepositoryError struct {
+type parseRepositoryStorageError struct {
 	path string
 	err  error
 }
 
-func (err *readRepositoryError) Error() string {
+func (err *parseRepositoryStorageError) Error() string {
 	return err.err.Error()
 }
 
-func (err *readRepositoryError) Extra() {
+func (err *parseRepositoryStorageError) Extra() {
 	term.Print("")
 	term.Print("yellow|The repository data is broken, please fix or delete it: %s|", err.path)
 }
