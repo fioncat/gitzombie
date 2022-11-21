@@ -231,6 +231,12 @@ func (s *RepositoryStorage) read(file *os.File) ([]*Repository, error) {
 	if err != nil {
 		return nil, errors.Trace(err, "decode repo data")
 	}
+	for _, repo := range repos {
+		err = repo.normalize()
+		if err != nil {
+			return nil, errors.Trace(err, "normalize repo %s", repo.Name)
+		}
+	}
 	return repos, nil
 }
 
