@@ -60,7 +60,7 @@ func homeSearchRepo(ctx *app.Context[HomeFlags, Data]) (*core.Repository, error)
 
 	repo := ctx.Data.Store.GetByName(ctx.Data.Remote.Name, apiRepo.Name)
 	if repo == nil {
-		repo, err = core.CreateRepository(ctx.Data.Remote, apiRepo.Name)
+		repo, err = core.WorkspaceRepository(ctx.Data.Remote, apiRepo.Name)
 		if err != nil {
 			return nil, err
 		}

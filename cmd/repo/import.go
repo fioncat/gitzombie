@@ -11,7 +11,6 @@ import (
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/errors"
-	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/osutil"
 	"github.com/fioncat/gitzombie/pkg/term"
 	"github.com/fioncat/gitzombie/pkg/worker"
@@ -21,14 +20,6 @@ import (
 type ImportFlags struct {
 	Ignore  []string
 	LogPath string
-}
-
-type importTask struct {
-	Path string
-	URL  string
-
-	User  string
-	Email string
 }
 
 var Import = app.Register(&app.Command[ImportFlags, Data]{
@@ -90,7 +81,7 @@ var Import = app.Register(&app.Command[ImportFlags, Data]{
 		repoWord := english.Plural(len(tasks), "repo", "repos")
 		term.ConfirmExit("Do you want to clone %s", repoWord)
 		w := worker.New("cloning", tasks)
-		errs := w.Run(func(name string, task *importTask) error {
+		errs := w.Run(func(name string, task *CloneTask) error {
 			return task.Execute()
 		})
 		if len(errs) > 0 {
@@ -99,18 +90,8 @@ var Import = app.Register(&app.Command[ImportFlags, Data]{
 
 				LogPath: ctx.Flags.LogPath,
 
-				Header: func(idx int, err error) string {
-					if gitErr, ok := err.(*git.ExecError); ok {
-						return fmt.Sprintf("command %q failed: %v", gitErr.Cmd, gitErr.Err)
-					}
-					return fmt.Sprintf("%d git command failed: %v", idx, err)
-				},
-				Content: func(_ int, err error) string {
-					if gitErr, ok := err.(*git.ExecError); ok {
-						return gitErr.Stderr
-					}
-					return ""
-				},
+				Header:  worker.GitHeader,
+				Content: worker.GitContent,
 			})
 		}
 		return nil
@@ -138,13 +119,13 @@ func importFilterIgnore(apiRepos []*api.Repository, ignores []string) ([]*api.Re
 	return newRepos, nil
 }
 
-func importGetTasks(ctx *app.Context[ImportFlags, Data], apiRepos []*api.Repository) ([]*worker.Task[importTask], error) {
+func importGetTasks(ctx *app.Context[ImportFlags, Data], apiRepos []*api.Repository) ([]*worker.Task[CloneTask], error) {
 	var err error
-	tasks := make([]*worker.Task[importTask], 0, len(apiRepos))
+	tasks := make([]*worker.Task[CloneTask], 0, len(apiRepos))
 	for _, apiRepo := range apiRepos {
 		repo := ctx.Data.Store.GetByName(ctx.Data.Remote.Name, apiRepo.Name)
 		if repo == nil {
-			repo, err = core.CreateRepository(ctx.Data.Remote, apiRepo.Name)
+			repo, err = core.WorkspaceRepository(ctx.Data.Remote, apiRepo.Name)
 			if err != nil {
 				return nil, errors.Trace(err, "convert repo %q", apiRepo.Name)
 			}
@@ -165,9 +146,9 @@ func importGetTasks(ctx *app.Context[ImportFlags, Data], apiRepos []*api.Reposit
 			return nil, errors.Trace(err, "get clone url")
 		}
 		user, email := ctx.Data.Remote.GetUserEmail(repo)
-		tasks = append(tasks, &worker.Task[importTask]{
+		tasks = append(tasks, &worker.Task[CloneTask]{
 			Name: repo.Name,
-			Value: &importTask{
+			Value: &CloneTask{
 				Path:  repo.Path,
 				URL:   url,
 				User:  user,
@@ -176,27 +157,4 @@ func importGetTasks(ctx *app.Context[ImportFlags, Data], apiRepos []*api.Reposit
 		})
 	}
 	return tasks, nil
-}
-
-func (task *importTask) Execute() error {
-	err := git.Clone(task.URL, task.Path, git.Mute)
-	if err != nil {
-		return err
-	}
-
-	err = git.Config("user.name", task.User, &git.Options{
-		QuietCmd:    true,
-		QuietStderr: true,
-
-		Path: task.Path,
-	})
-	if err != nil {
-		return err
-	}
-	return git.Config("user.email", task.Email, &git.Options{
-		QuietCmd:    true,
-		QuietStderr: true,
-
-		Path: task.Path,
-	})
 }

@@ -34,14 +34,21 @@ type Repository struct {
 
 	View uint64
 
+	workspace bool
+
 	group string
 	base  string
 }
 
-func CreateRepository(remote *Remote, name string) (*Repository, error) {
+func WorkspaceRepository(remote *Remote, name string) (*Repository, error) {
 	dir := config.Get().Workspace
 	path := filepath.Join(dir, remote.Name, name)
-	return AttachRepository(remote, name, path)
+	repo, err := AttachRepository(remote, name, path)
+	if err != nil {
+		return nil, err
+	}
+	repo.workspace = true
+	return repo, nil
 }
 
 func AttachRepository(remote *Remote, name, path string) (*Repository, error) {
@@ -232,6 +239,11 @@ func (s *RepositoryStorage) read(file *os.File) ([]*Repository, error) {
 		return nil, errors.Trace(err, "decode repo data")
 	}
 	for _, repo := range repos {
+		if repo.Path == "" {
+			dir := config.Get().Workspace
+			repo.Path = filepath.Join(dir, repo.Remote, repo.Name)
+			repo.workspace = true
+		}
 		err = repo.normalize()
 		if err != nil {
 			return nil, errors.Trace(err, "normalize repo %s", repo.Name)
@@ -272,6 +284,11 @@ func (s *RepositoryStorage) Close() error {
 }
 
 func (s *RepositoryStorage) write(file *os.File) error {
+	for _, repo := range s.repos {
+		if repo.workspace {
+			repo.Path = ""
+		}
+	}
 	encoder := gob.NewEncoder(file)
 	return errors.Trace(encoder.Encode(&s.repos), "encode repo")
 }
