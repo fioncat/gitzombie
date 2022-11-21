@@ -112,7 +112,7 @@ func getLocal[Flags any](ctx *app.Context[Flags, Data], name string) (*core.Repo
 	var err error
 	repo := ctx.Data.Store.GetByName(ctx.Data.Remote.Name, name)
 	if repo == nil {
-		repo, err = core.CreateRepository(ctx.Data.Remote, name)
+		repo, err = core.WorkspaceRepository(ctx.Data.Remote, name)
 		if err != nil {
 			return nil, errors.Trace(err, "create repository")
 		}
@@ -195,4 +195,35 @@ func apiGet[Flags any](ctx *app.Context[Flags, Data], repo *core.Repository) (*a
 		return err
 	})
 	return remoteRepo, err
+}
+
+type CloneTask struct {
+	Path string
+	URL  string
+
+	User  string
+	Email string
+}
+
+func (task *CloneTask) Execute() error {
+	err := git.Clone(task.URL, task.Path, git.Mute)
+	if err != nil {
+		return err
+	}
+
+	err = git.Config("user.name", task.User, &git.Options{
+		QuietCmd:    true,
+		QuietStderr: true,
+
+		Path: task.Path,
+	})
+	if err != nil {
+		return err
+	}
+	return git.Config("user.email", task.Email, &git.Options{
+		QuietCmd:    true,
+		QuietStderr: true,
+
+		Path: task.Path,
+	})
 }

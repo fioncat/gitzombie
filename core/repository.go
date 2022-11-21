@@ -1,8 +1,8 @@
 package core
 
 import (
+	"encoding/gob"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/fioncat/gitzombie/config"
-	"github.com/fioncat/gitzombie/pkg/binary"
 	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/osutil"
@@ -35,14 +34,21 @@ type Repository struct {
 
 	View uint64
 
+	workspace bool
+
 	group string
 	base  string
 }
 
-func CreateRepository(remote *Remote, name string) (*Repository, error) {
+func WorkspaceRepository(remote *Remote, name string) (*Repository, error) {
 	dir := config.Get().Workspace
 	path := filepath.Join(dir, remote.Name, name)
-	return AttachRepository(remote, name, path)
+	repo, err := AttachRepository(remote, name, path)
+	if err != nil {
+		return nil, err
+	}
+	repo.workspace = true
+	return repo, nil
 }
 
 func AttachRepository(remote *Remote, name, path string) (*Repository, error) {
@@ -174,7 +180,7 @@ func NewRepositoryStorage() (*RepositoryStorage, error) {
 }
 
 func (s *RepositoryStorage) init() error {
-	path := config.GetLocalDir("data")
+	path := config.GetLocalDir("meta")
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -226,41 +232,24 @@ func (s *RepositoryStorage) init() error {
 }
 
 func (s *RepositoryStorage) read(file *os.File) ([]*Repository, error) {
+	decoder := gob.NewDecoder(file)
 	var repos []*Repository
-	for {
-		path, err := binary.ReadString(file)
-		if err != nil {
-			if err == io.EOF {
-				return repos, nil
-			}
-			return nil, s.readError(err, "path")
-		}
-		name, err := binary.ReadString(file)
-		if err != nil {
-			return nil, s.readError(err, "name")
-		}
-		remote, err := binary.ReadString(file)
-		if err != nil {
-			return nil, s.readError(err, "remote")
-		}
-		view, err := binary.ReadInt64(file)
-		if err != nil {
-			return nil, s.readError(err, "view")
-		}
-
-		repo := &Repository{
-			Path:   path,
-			Name:   name,
-			Remote: remote,
-			View:   view,
+	err := decoder.Decode(&repos)
+	if err != nil {
+		return nil, errors.Trace(err, "decode repo data")
+	}
+	for _, repo := range repos {
+		if repo.Path == "" {
+			dir := config.Get().Workspace
+			repo.Path = filepath.Join(dir, repo.Remote, repo.Name)
+			repo.workspace = true
 		}
 		err = repo.normalize()
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err, "normalize repo %s", repo.Name)
 		}
-
-		repos = append(repos, repo)
 	}
+	return repos, nil
 }
 
 func (s *RepositoryStorage) List(remote string) []*Repository {
@@ -284,7 +273,7 @@ func (s *RepositoryStorage) Close() error {
 	if s.readonly {
 		return nil
 	}
-	path := config.GetLocalDir("data")
+	path := config.GetLocalDir("meta")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return errors.Trace(err, "open data file")
@@ -295,26 +284,13 @@ func (s *RepositoryStorage) Close() error {
 }
 
 func (s *RepositoryStorage) write(file *os.File) error {
-	s.sort()
 	for _, repo := range s.repos {
-		err := binary.WriteString(file, repo.Path)
-		if err != nil {
-			return err
-		}
-		err = binary.WriteString(file, repo.Name)
-		if err != nil {
-			return err
-		}
-		err = binary.WriteString(file, repo.Remote)
-		if err != nil {
-			return err
-		}
-		err = binary.WriteInt64(file, repo.View)
-		if err != nil {
-			return err
+		if repo.workspace {
+			repo.Path = ""
 		}
 	}
-	return nil
+	encoder := gob.NewEncoder(file)
+	return errors.Trace(encoder.Encode(&s.repos), "encode repo")
 }
 
 func (s *RepositoryStorage) sort() {

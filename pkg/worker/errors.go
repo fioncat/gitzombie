@@ -8,6 +8,7 @@ import (
 
 	"github.com/dustin/go-humanize/english"
 	"github.com/fioncat/gitzombie/pkg/errors"
+	"github.com/fioncat/gitzombie/pkg/git"
 	"github.com/fioncat/gitzombie/pkg/osutil"
 	"github.com/fioncat/gitzombie/pkg/term"
 )
@@ -42,4 +43,18 @@ func HandleErrors(errs []error, h *ErrorHandler) error {
 	errWord := english.Plural(len(errs), "error", "")
 	term.Print("write red|%s log| to green|%s|", errWord, logPath)
 	return fmt.Errorf("workflow failed with %s", errWord)
+}
+
+func GitHeader(idx int, err error) string {
+	if gitErr, ok := err.(*git.ExecError); ok {
+		return fmt.Sprintf("command %q failed: %v", gitErr.Cmd, gitErr.Err)
+	}
+	return fmt.Sprintf("%d git command failed: %v", idx, err)
+}
+
+func GitContent(_ int, err error) string {
+	if gitErr, ok := err.(*git.ExecError); ok {
+		return gitErr.Stderr
+	}
+	return ""
 }
