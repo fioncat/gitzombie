@@ -6,5 +6,7 @@ alias gzs="gz sync branch"
 alias gzc="gz create"
 alias gzd="gz delete"
 alias gzr="gz run"
+alias gze="gz edit"
+alias gzk="gz switch"
 
 alias zz="gz jump"
