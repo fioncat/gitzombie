@@ -17,9 +17,8 @@ type HomeFlags struct {
 }
 
 var Home = app.Register(&app.Command[HomeFlags, Data]{
-	Use:    "repo {remote} {repo}",
-	Desc:   "Print the home path of a repo",
-	Action: "Home",
+	Use:    "home {remote} {repo}",
+	Desc:   "Enter or clone a repo",
 
 	Init: initData[HomeFlags],
 
