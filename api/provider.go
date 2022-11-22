@@ -1,6 +1,8 @@
 package api
 
 import (
+	"io"
+
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/errors"
 )
@@ -33,6 +35,21 @@ type MergeOption struct {
 	Upstream *Repository
 }
 
+type Release struct {
+	Name string
+	Tag  string
+
+	WebURL string
+
+	Files []*ReleaseFile
+}
+
+type ReleaseFile struct {
+	ID any
+
+	Name string
+}
+
 type Provider interface {
 	Name() string
 	SearchRepositories(group, query string) ([]*Repository, error)
@@ -41,4 +58,8 @@ type Provider interface {
 
 	GetMerge(repo *core.Repository, opts MergeOption) (string, error)
 	CreateMerge(repo *core.Repository, opts MergeOption) (string, error)
+
+	GetRelease(repo *core.Repository, tag string) (*Release, error)
+	ListReleases(repo *core.Repository) ([]*Release, error)
+	DownloadReleaseFile(repo *core.Repository, file *ReleaseFile) (io.ReadCloser, error)
 }
