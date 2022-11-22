@@ -89,7 +89,6 @@ func (b *Builder) Execute() error {
 	if err != nil {
 		return errors.Trace(err, "ensure repo dir")
 	}
-	term.PrintOperation("begin to create repo green|%s|", b.repo.Name)
 	err = b.executeJobs(dir, b.Create)
 	if err != nil {
 		return err
@@ -104,14 +103,13 @@ func (b *Builder) Execute() error {
 	}
 
 	for _, file := range b.Files {
-		term.PrintOperation("write file green|%s|", file.Name)
+		term.PrintOperation("blue|write file %s|", file.Name)
 		err = b.executeFile(file)
 		if err != nil {
 			return err
 		}
 	}
 	if len(b.Init) > 0 {
-		term.PrintOperation("begin to init repo green|%s|", b.repo.Name)
 		return b.executeJobs(b.repo.Path, b.Init)
 	}
 

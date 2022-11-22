@@ -1,5 +1,3 @@
-# bash completion V2 for gitzombie                            -*- shell-script -*-
-
 __gitzombie_debug()
 {
     if [[ -n ${BASH_COMP_DEBUG_FILE:-} ]]; then
@@ -23,7 +21,7 @@ __gitzombie_get_completion_results() {
     # Prepare the command to request completions for the program.
     # Calling ${words[0]} instead of directly gitzombie allows to handle aliases
     args=("${words[@]:1}")
-    requestComp="${words[0]} __complete ${args[*]}"
+    requestComp="gitzombie __complete ${args[*]}"
 
     lastParam=${words[$((${#words[@]}-1))]}
     lastChar=${lastParam:$((${#lastParam}-1)):1}
@@ -318,8 +316,10 @@ __start_gitzombie()
 
 if [[ $(type -t compopt) = "builtin" ]]; then
     complete -o default -F __start_gitzombie gitzombie
+    complete -o default -F __start_gitzombie gz
 else
     complete -o default -o nospace -F __start_gitzombie gitzombie
+    complete -o default -o nospace -F __start_gitzombie gz
 fi
 
 # ex: ts=4 sw=4 et filetype=sh

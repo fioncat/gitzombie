@@ -3,6 +3,7 @@ package repo
 import (
 	"github.com/fioncat/gitzombie/api"
 	"github.com/fioncat/gitzombie/cmd/app"
+	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/term"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +26,8 @@ var Open = app.Register(&app.Command[app.Empty, Data]{
 		var err error
 		switch ctx.ArgLen() {
 		case 0:
-			repo, err := getCurrent(ctx)
+			var repo *core.Repository
+			repo, err = getCurrent(ctx)
 			if err != nil {
 				return err
 			}
