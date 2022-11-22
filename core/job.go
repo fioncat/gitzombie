@@ -112,7 +112,7 @@ func (job *Job) Cmd(root string, env osutil.Env, out *bytes.Buffer) (*exec.Cmd, 
 			cmd.Stderr = out
 		}
 	} else {
-		cmd.Stdout = os.Stdout
+		cmd.Stdout = os.Stderr
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
 	}

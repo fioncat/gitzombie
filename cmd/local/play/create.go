@@ -1,10 +1,11 @@
 package play
 
 import (
+	"fmt"
+
 	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/core"
-	"github.com/fioncat/gitzombie/pkg/term"
 	"github.com/spf13/cobra"
 )
 
@@ -48,8 +49,7 @@ var Create = app.Register(&app.Command[CreateFlags, app.Empty]{
 			return err
 		}
 
-		term.Print("")
-		term.Print("playground green|%s| has been created", repo.Name)
+		fmt.Println(repo.Path)
 		return nil
 	},
 })
