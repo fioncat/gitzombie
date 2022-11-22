@@ -163,7 +163,7 @@ func NewDownloader(dir string, tasks []*DownloadTask) (*Downloader, error) {
 				start:  now,
 				file:   file,
 				reader: task.Reader,
-				wait: true,
+				wait:   true,
 			},
 		}
 
