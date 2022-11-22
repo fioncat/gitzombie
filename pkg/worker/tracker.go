@@ -110,13 +110,6 @@ func (t *jobTracker[T]) Add(task *Task[T]) {
 	t.running = append(t.running, task)
 }
 
-func (t *jobTracker[T]) Done(task *Task[T], ok bool) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	task.done = true
-	task.fail = !ok
-}
-
 func cursorUp(out *strings.Builder) {
 	out.WriteString(text.CursorUp.Sprint())
 	out.WriteString(text.EraseLine.Sprint())
