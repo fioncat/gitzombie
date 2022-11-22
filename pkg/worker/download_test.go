@@ -20,9 +20,10 @@ func (r *testReadCloser) Close() error {
 }
 
 func TestDownload(t *testing.T) {
-	tasks := make([]*DownloadTask, 3)
-	for i := 0; i < 3; i++ {
-		var total int64 = 1024 * 1024 * (500 + int64(i)*100)
+	Count = 3
+	tasks := make([]*DownloadTask, 10)
+	for i := 0; i < 10; i++ {
+		var total int64 = 1024 * 1024 * (10 + int64(i)*20)
 
 		reader := io.LimitReader(rand.Reader, total)
 		readCloser := &testReadCloser{reader: reader}

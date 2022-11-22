@@ -28,6 +28,8 @@ type downloadTask struct {
 	reader io.ReadCloser
 
 	mu sync.Mutex
+
+	wait bool
 }
 
 func (t *downloadTask) Write(data []byte) (int, error) {
@@ -106,15 +108,19 @@ func (t *downloadTracker) render() bool {
 				msg = fmt.Sprintf("Download %s done\n", name)
 			}
 		} else {
-			size := bytesStr(atomic.LoadUint64(&task.Value.size))
-			size = strings.ReplaceAll(size, " ", "")
-			msg = fmt.Sprintf("Downloading %s... %s", name, size)
-			if task.Value.speed > 0 {
-				speed := atomic.LoadUint64(&task.Value.speed)
-				speedSize := bytesStr(speed)
-				msg = fmt.Sprintf("%s (%s/s)", msg, speedSize)
+			if task.Value.wait {
+				msg = fmt.Sprintf("Download %s waitting...\n", name)
+			} else {
+				size := bytesStr(atomic.LoadUint64(&task.Value.size))
+				size = strings.ReplaceAll(size, " ", "")
+				msg = fmt.Sprintf("Downloading %s... %s", name, size)
+				if task.Value.speed > 0 {
+					speed := atomic.LoadUint64(&task.Value.speed)
+					speedSize := bytesStr(speed)
+					msg = fmt.Sprintf("%s (%s/s)", msg, speedSize)
+				}
+				msg += "\n"
 			}
-			msg += "\n"
 			done = false
 		}
 		out.WriteString(msg)
@@ -157,6 +163,7 @@ func NewDownloader(dir string, tasks []*DownloadTask) (*Downloader, error) {
 				start:  now,
 				file:   file,
 				reader: task.Reader,
+				wait: true,
 			},
 		}
 
@@ -178,6 +185,7 @@ func (w *Downloader) Run(logPath string) error {
 	return w.worker.Run(func(task *Task[downloadTask]) error {
 		defer task.Value.file.Close()
 		defer task.Value.reader.Close()
+		task.Value.wait = false
 
 		_, err := io.Copy(task.Value, task.Value.reader)
 		return err
