@@ -24,11 +24,15 @@ type JobError struct {
 	Name string
 	Path string
 	Err  error
-	Out  string
+	out  string
 }
 
 func (err *JobError) Error() string {
 	return fmt.Sprintf("failed to execute job %s on %s: %v", err.Name, err.Path, err.Err)
+}
+
+func (err *JobError) Out() string {
+	return err.out
 }
 
 func ListJobNames() ([]string, error) {
@@ -66,7 +70,7 @@ func (job *Job) Execute(root string, env osutil.Env) error {
 			Name: job.Name,
 			Path: root,
 			Err:  err,
-			Out:  out.String(),
+			out:  out.String(),
 		}
 	}
 	return nil

@@ -80,21 +80,17 @@ var Import = app.Register(&app.Command[ImportFlags, Data]{
 		}
 		repoWord := english.Plural(len(tasks), "repo", "repos")
 		term.ConfirmExit("Do you want to clone %s", repoWord)
-		w := worker.New("cloning", tasks)
-		errs := w.Run(func(name string, task *CloneTask) error {
-			return task.Execute()
-		})
-		if len(errs) > 0 {
-			return worker.HandleErrors(errs, &worker.ErrorHandler{
-				Name: "import",
+		w := worker.Worker[CloneTask]{
+			Name: "import",
 
-				LogPath: ctx.Flags.LogPath,
+			Tasks:   tasks,
+			Tracker: worker.NewJobTracker[CloneTask]("cloning"),
 
-				Header:  worker.GitHeader,
-				Content: worker.GitContent,
-			})
+			LogPath: ctx.Flags.LogPath,
 		}
-		return nil
+		return w.Run(func(task *worker.Task[CloneTask]) error {
+			return task.Value.Execute()
+		})
 	},
 })
 
