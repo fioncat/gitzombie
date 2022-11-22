@@ -41,7 +41,8 @@ func HandleErrors(errs []error, h *ErrorHandler) error {
 		return errors.Trace(err, "write log file")
 	}
 	errWord := english.Plural(len(errs), "error", "")
-	term.Print("write red|%s log| to green|%s|", errWord, logPath)
+	term.Print("")
+	term.Print("write red|%s log| to %s", errWord, logPath)
 	return fmt.Errorf("workflow failed with %s", errWord)
 }
 
