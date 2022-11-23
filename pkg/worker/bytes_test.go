@@ -21,24 +21,22 @@ func (r *testReadCloser) Close() error {
 
 func TestDownload(t *testing.T) {
 	Count = 3
-	tasks := make([]*DownloadTask, 10)
+	tasks := make([]*Task[BytesTask], 10)
 	for i := 0; i < 10; i++ {
-		var total int64 = 1024 * 1024 * (10 + int64(i)*20)
+		var total int64 = 1024 * 1024 * (50 + int64(i)*20)
 
 		reader := io.LimitReader(rand.Reader, total)
 		readCloser := &testReadCloser{reader: reader}
 
-		tasks[i] = &DownloadTask{
-			Name:   fmt.Sprintf("test_%d", i),
-			Reader: readCloser,
-		}
+		name := fmt.Sprintf("test_%d", i)
+		tasks[i] = DownloadTask(name, readCloser, uint64(total))
 	}
-	d, err := NewDownloader("tmp", tasks)
-	if err != nil {
-		t.Fatal(err)
+	w := &Bytes{
+		Tracker: NewBytesTracker(tasks, "Download", "Downloading"),
+		Tasks:   tasks,
 	}
 
-	err = d.Run("")
+	err := w.Download("tmp")
 	if err != nil {
 		t.Fatal(err)
 	}

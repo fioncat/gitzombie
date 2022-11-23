@@ -48,6 +48,8 @@ type ReleaseFile struct {
 	ID any
 
 	Name string
+
+	Size int64
 }
 
 type Provider interface {

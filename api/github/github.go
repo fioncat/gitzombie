@@ -301,6 +301,7 @@ func (p *Provider) convertRelease(githubRelease *github.RepositoryRelease) *api.
 		release.Files[i] = &api.ReleaseFile{
 			ID:   asset.GetID(),
 			Name: asset.GetName(),
+			Size: int64(asset.GetSize()),
 		}
 	}
 	return release
