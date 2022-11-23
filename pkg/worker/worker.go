@@ -1,46 +1,61 @@
 package worker
 
 import (
+	"bytes"
+	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 
-	"github.com/fioncat/gitzombie/pkg/tracker"
+	"github.com/dustin/go-humanize/english"
+	"github.com/fioncat/gitzombie/pkg/errors"
+	"github.com/fioncat/gitzombie/pkg/osutil"
+	"github.com/fioncat/gitzombie/pkg/term"
 )
 
-var (
-	Count = runtime.NumCPU()
-)
+var Count = runtime.NumCPU()
 
-type Action[T any] func(name string, val *T) error
+type Action[T any] func(task *Task[T]) error
 
 type Task[T any] struct {
-	Name   string
+	Name  string
+	Value *T
+
 	Action Action[T]
-	Value  *T
+
+	done bool
+	fail bool
+}
+
+type Tracker[T any] interface {
+	Render(total int) func()
+
+	Add(task *Task[T])
+}
+
+type taskError[T any] struct {
+	err  error
+	task *Task[T]
 }
 
 type Worker[T any] struct {
-	tasks []*Task[T]
+	Name string
 
-	verb string
+	Tasks   []*Task[T]
+	Tracker Tracker[T]
+
+	LogPath string
 }
 
-func New[T any](verb string, tasks []*Task[T]) *Worker[T] {
-	return &Worker[T]{
-		tasks: tasks,
-		verb:  verb,
-	}
-}
-
-func (w *Worker[T]) Run(action Action[T]) []error {
+func (w *Worker[T]) Run(action Action[T]) error {
 	if Count <= 0 {
 		Count = runtime.NumCPU()
 	}
-	taskChan := make(chan *Task[T], len(w.tasks))
-	errChan := make(chan error, len(w.tasks))
+	taskChan := make(chan *Task[T], len(w.Tasks))
+	errChan := make(chan *taskError[T], len(w.Tasks))
 
-	tck := tracker.New(w.verb, len(w.tasks))
-	waitRender := tck.Render()
+	waitRender := w.Tracker.Render(len(w.Tasks))
 
 	var wg sync.WaitGroup
 	wg.Add(Count)
@@ -52,25 +67,62 @@ func (w *Worker[T]) Run(action Action[T]) []error {
 				if task.Action != nil {
 					h = task.Action
 				}
-				tck.Start(task.Name)
-				err := h(task.Name, task.Value)
-				tck.Done(task.Name, err == nil)
+				w.Tracker.Add(task)
+				err := h(task)
 				if err != nil {
-					errChan <- err
+					task.fail = true
+					errChan <- &taskError[T]{
+						task: task,
+						err:  err,
+					}
 				}
+				task.done = true
 			}
 		}()
 	}
-	for _, task := range w.tasks {
+	for _, task := range w.Tasks {
 		taskChan <- task
 	}
 	close(taskChan)
 	wg.Wait()
 	close(errChan)
-	var errs []error
+	var errs []*taskError[T]
 	for err := range errChan {
 		errs = append(errs, err)
 	}
 	waitRender()
-	return errs
+
+	if len(errs) > 0 {
+		return w.handleErrors(errs)
+	}
+	return nil
+}
+
+type outError interface {
+	Out() string
+}
+
+func (w *Worker[T]) handleErrors(errs []*taskError[T]) error {
+	var sb bytes.Buffer
+	sb.Grow(len(errs))
+	for _, err := range errs {
+		header := fmt.Sprintf("=> handle %s failed: %v\n", err.task.Name, err.err)
+		sb.WriteString(header)
+		if outErr, ok := err.err.(outError); ok {
+			sb.WriteString(outErr.Out())
+		}
+		sb.WriteString("\n")
+	}
+	logPath := w.LogPath
+	if logPath == "" {
+		logPath = filepath.Join(os.TempDir(), "gitzombie", "logs", w.Name)
+	}
+	err := osutil.WriteFile(logPath, sb.Bytes())
+	if err != nil {
+		return errors.Trace(err, "write log file")
+	}
+	errWord := english.Plural(len(errs), "error", "")
+	term.Print("")
+	term.Print("write red|%s log| to %s", errWord, logPath)
+	return fmt.Errorf("%s failed with %s", w.Name, errWord)
 }

@@ -1,4 +1,4 @@
-package tracker
+package worker
 
 import (
 	"fmt"
@@ -16,40 +16,35 @@ const (
 	renderInterval = time.Millisecond * 250
 )
 
-type Tracker struct {
+type jobTracker[T any] struct {
 	lock sync.Mutex
 
-	running []*task
+	running []*Task[T]
 
 	lastRunningCount int
+
+	total int
 
 	doneFmt string
 	done    int
 
-	total int
-
 	verb string
 }
 
-type task struct {
-	name string
-
-	done bool
-	fail bool
-}
-
-func New(verb string, total int) *Tracker {
-	totalStr := strconv.Itoa(total)
-	totalLen := len(totalStr)
-	doneFmt := "%" + strconv.Itoa(totalLen) + "d"
-	return &Tracker{
-		total:   total,
-		doneFmt: doneFmt,
-		verb:    verb,
+func NewJobTracker[T any](verb string) Tracker[T] {
+	return &jobTracker[T]{
+		verb: verb,
 	}
 }
 
-func (t *Tracker) Render() func() {
+func (t *jobTracker[T]) Render(total int) func() {
+	totalStr := strconv.Itoa(total)
+	totalLen := len(totalStr)
+	doneFmt := "%" + strconv.Itoa(totalLen) + "d"
+
+	t.doneFmt = doneFmt
+	t.total = total
+
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -65,12 +60,12 @@ func (t *Tracker) Render() func() {
 	}
 }
 
-func (t *Tracker) render() {
+func (t *jobTracker[T]) render() {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	dones := make([]*task, 0)
-	running := make([]*task, 0, len(t.running))
+	dones := make([]*Task[T], 0)
+	running := make([]*Task[T], 0, len(t.running))
 	for _, task := range t.running {
 		if task.done {
 			dones = append(dones, task)
@@ -84,8 +79,7 @@ func (t *Tracker) render() {
 	out.Grow(t.lastRunningCount)
 
 	for t.lastRunningCount > 0 {
-		out.WriteString(text.CursorUp.Sprint())
-		out.WriteString(text.EraseLine.Sprint())
+		cursorUp(&out)
 		t.lastRunningCount--
 	}
 	t.lastRunningCount = len(running)
@@ -95,35 +89,28 @@ func (t *Tracker) render() {
 		doneStr := fmt.Sprintf(t.doneFmt, t.done)
 		var line string
 		if task.fail {
-			line = fmt.Sprintf("red|(%s/%d)| %s failed\n", doneStr, t.total, task.name)
+			line = fmt.Sprintf("red|(%s/%d)| %s failed\n", doneStr, t.total, task.Name)
 		} else {
-			line = fmt.Sprintf("green|(%s/%d)| %s done\n", doneStr, t.total, task.name)
+			line = fmt.Sprintf("green|(%s/%d)| %s done\n", doneStr, t.total, task.Name)
 		}
 		out.WriteString(line)
 	}
 
 	for _, task := range running {
-		line := fmt.Sprintf("yellow|%s| %s\n", t.verb, task.name)
+		line := fmt.Sprintf("yellow|%s| %s\n", t.verb, task.Name)
 		out.WriteString(line)
 	}
 	lines := term.Color(out.String())
 	fmt.Fprint(os.Stderr, lines)
 }
 
-func (t *Tracker) Start(name string) {
+func (t *jobTracker[T]) Add(task *Task[T]) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	t.running = append(t.running, &task{name: name})
+	t.running = append(t.running, task)
 }
 
-func (t *Tracker) Done(name string, ok bool) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	for _, task := range t.running {
-		if task.name == name {
-			task.done = true
-			task.fail = !ok
-			return
-		}
-	}
+func cursorUp(out *strings.Builder) {
+	out.WriteString(text.CursorUp.Sprint())
+	out.WriteString(text.EraseLine.Sprint())
 }

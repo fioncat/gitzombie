@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -240,6 +241,70 @@ func (p *Provider) createPullOptions(repo *core.Repository, opts api.MergeOption
 
 		HeadOwner: headOwner,
 	}, nil
+}
+
+func (p *Provider) GetRelease(repo *core.Repository, tag string) (*api.Release, error) {
+	var release *github.RepositoryRelease
+	var resp *github.Response
+	var err error
+	if tag == "" {
+		release, resp, err = p.cli.Repositories.GetLatestRelease(p.ctx,
+			repo.Group(), repo.Base())
+		if err = p.wrapResp("latest release", resp, err); err != nil {
+			return nil, err
+		}
+	} else {
+		release, resp, err = p.cli.Repositories.GetReleaseByTag(p.ctx,
+			repo.Group(), repo.Base(), tag)
+		if err = p.wrapResp("release "+tag, resp, err); err != nil {
+			return nil, err
+		}
+	}
+	return p.convertRelease(release), nil
+}
+
+func (p *Provider) ListReleases(repo *core.Repository) ([]*api.Release, error) {
+	githubReleases, resp, err := p.cli.Repositories.ListReleases(p.ctx,
+		repo.Group(), repo.Base(), &github.ListOptions{
+			PerPage: config.Get().SearchLimit,
+		})
+	if err = p.wrapResp("releases", resp, err); err != nil {
+		return nil, err
+	}
+	releases := make([]*api.Release, len(githubReleases))
+	for i, githubRelease := range githubReleases {
+		releases[i] = p.convertRelease(githubRelease)
+	}
+	return releases, nil
+}
+
+func (p *Provider) DownloadReleaseFile(repo *core.Repository, file *api.ReleaseFile) (io.ReadCloser, error) {
+	rc, _, err := p.cli.Repositories.DownloadReleaseAsset(p.ctx,
+		repo.Group(), repo.Base(), file.ID.(int64), http.DefaultClient)
+	if err != nil {
+		return nil, err
+	}
+	if rc == nil {
+		return nil, api.ErrNoResult
+	}
+	return rc, nil
+}
+
+func (p *Provider) convertRelease(githubRelease *github.RepositoryRelease) *api.Release {
+	release := &api.Release{
+		Name:   githubRelease.GetName(),
+		Tag:    githubRelease.GetTagName(),
+		WebURL: githubRelease.GetHTMLURL(),
+	}
+	release.Files = make([]*api.ReleaseFile, len(githubRelease.Assets))
+	for i, asset := range githubRelease.Assets {
+		release.Files[i] = &api.ReleaseFile{
+			ID:   asset.GetID(),
+			Name: asset.GetName(),
+			Size: int64(asset.GetSize()),
+		}
+	}
+	return release
 }
 
 func (p *Provider) wrapResp(name string, resp *github.Response, err error) error {

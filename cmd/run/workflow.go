@@ -1,7 +1,6 @@
 package run
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/dustin/go-humanize/english"
@@ -120,38 +119,21 @@ func workflowRun(ctx *app.Context[WorkflowFlags, app.Empty], jobs []*core.Job, i
 		}
 	}
 
-	w := worker.New("running", tasks)
+	w := worker.Worker[core.WorkflowMatchItem]{
+		Name:    "workflow",
+		Tasks:   tasks,
+		Tracker: worker.NewJobTracker[core.WorkflowMatchItem]("running"),
+		LogPath: ctx.Flags.LogPath,
+	}
 
 	core.MuteJob = true
-	errs := w.Run(func(_ string, item *core.WorkflowMatchItem) error {
+	return w.Run(func(task *worker.Task[core.WorkflowMatchItem]) error {
 		for _, job := range jobs {
-			err := job.Execute(item.Path, item.Env)
+			err := job.Execute(task.Value.Path, task.Value.Env)
 			if err != nil {
 				return err
 			}
 		}
 		return nil
 	})
-
-	if len(errs) > 0 {
-		return worker.HandleErrors(errs, &worker.ErrorHandler{
-			Name: "workflow",
-
-			LogPath: ctx.Flags.LogPath,
-
-			Header: func(idx int, err error) string {
-				if jobErr, ok := err.(*core.JobError); ok {
-					return fmt.Sprintf("output of %q on %q: %v", jobErr.Name, jobErr.Path, jobErr.Err)
-				}
-				return fmt.Sprintf("%d error: %v", idx, err)
-			},
-			Content: func(_ int, err error) string {
-				if jobErr, ok := err.(*core.JobError); ok {
-					return jobErr.Out
-				}
-				return ""
-			},
-		})
-	}
-	return nil
 }

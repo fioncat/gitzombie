@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -173,6 +174,21 @@ func (p *Provider) getMergeRequest(repo *core.Repository, opts api.MergeOption) 
 		return nil, nil
 	}
 	return mrs[0], nil
+}
+
+func (p *Provider) GetRelease(repo *core.Repository, tag string) (*api.Release, error) {
+	// TODO: support release
+	return nil, errors.New("sorry, gitlab now does not support release")
+}
+
+func (p *Provider) ListReleases(repo *core.Repository) ([]*api.Release, error) {
+	// TODO: support release
+	return nil, errors.New("sorry, gitlab now does not support release")
+}
+
+func (p *Provider) DownloadReleaseFile(repo *core.Repository, file *api.ReleaseFile) (io.ReadCloser, error) {
+	// TODO: support release
+	return nil, errors.New("sorry, gitlab now does not support release")
 }
 
 func (p *Provider) wrapResp(name string, resp *gitlab.Response, err error) error {

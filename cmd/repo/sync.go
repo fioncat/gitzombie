@@ -116,21 +116,17 @@ func syncStorage(ctx *app.Context[SyncFlags, SyncData]) error {
 		return nil
 	}
 
-	w := worker.New("cloning", tasks)
-	errs := w.Run(func(name string, task *CloneTask) error {
-		return task.Execute()
-	})
-	if len(errs) > 0 {
-		return worker.HandleErrors(errs, &worker.ErrorHandler{
-			Name:    "clone",
-			LogPath: ctx.Flags.LogPath,
+	w := worker.Worker[CloneTask]{
+		Name: "sync",
 
-			Header:  worker.GitHeader,
-			Content: worker.GitContent,
-		})
+		Tasks:   tasks,
+		Tracker: worker.NewJobTracker[CloneTask]("cloning"),
+
+		LogPath: ctx.Flags.LogPath,
 	}
-
-	return nil
+	return w.Run(func(task *worker.Task[CloneTask]) error {
+		return task.Value.Execute()
+	})
 }
 
 func syncBuildCloneTasks(data *SyncData) ([]*worker.Task[CloneTask], error) {

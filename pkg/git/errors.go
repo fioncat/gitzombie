@@ -24,6 +24,10 @@ func (e *ExecError) Error() string {
 	return fmt.Sprintf("failed to exec git command: %v", e.Err)
 }
 
+func (e *ExecError) Out() string {
+	return e.Stderr
+}
+
 func (e *ExecError) Extra() {
 	if e.Stderr != "" {
 		term.Print(e.Stderr)
