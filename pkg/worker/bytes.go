@@ -15,6 +15,8 @@ import (
 	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/osutil"
 	"github.com/fioncat/gitzombie/pkg/term"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
 type BytesTask struct {
@@ -28,6 +30,8 @@ type BytesTask struct {
 	speed uint64 // bytes hanlde speed
 
 	total uint64
+
+	totalStr string
 
 	wait bool
 }
@@ -71,6 +75,21 @@ func (bt *BytesTask) grow(delta int) {
 	}
 }
 
+func setBytesTaskTotalStr(tasks []*Task[BytesTask]) {
+	sizeLen := 0
+	for _, task := range tasks {
+		size := bytesStr(task.Value.total)
+		if len(size) > sizeLen {
+			sizeLen = len(size)
+		}
+		task.Value.totalStr = size
+	}
+	totalFmt := "%" + strconv.Itoa(sizeLen) + "s"
+	for _, task := range tasks {
+		task.Value.totalStr = fmt.Sprintf(totalFmt, task.Value.totalStr)
+	}
+}
+
 type BytesTracker struct {
 	lock sync.Mutex
 
@@ -79,16 +98,11 @@ type BytesTracker struct {
 	nameFmt string
 
 	rendered bool
-
-	verb    string
-	verbing string
 }
 
-func NewBytesTracker(tasks []*Task[BytesTask], verb, verbing string) Tracker[BytesTask] {
+func NewBytesTracker(tasks []*Task[BytesTask]) Tracker[BytesTask] {
 	return &BytesTracker{
-		tasks:   tasks,
-		verb:    verb,
-		verbing: verbing,
+		tasks: tasks,
 	}
 }
 
@@ -137,17 +151,17 @@ func (t *BytesTracker) render() bool {
 		var line string
 		if task.done {
 			if task.fail {
-				line = fmt.Sprintf("%s %s red|failed|\n", t.verb, task.Name)
+				line = fmt.Sprintf("%s red|failed|\n", task.Name)
 			} else {
-				line = fmt.Sprintf("%s %s done\n", t.verb, task.Name)
+				line = fmt.Sprintf("%s done\n", task.Name)
 			}
 		} else {
 			if task.Value.wait {
-				line = fmt.Sprintf("%s %s waitting...\n", t.verb, name)
+				line = fmt.Sprintf("%s waitting...\n", name)
 			} else {
 				size := bytesStr(atomic.LoadUint64(&task.Value.size))
 				speed := bytesStr(atomic.LoadUint64(&task.Value.speed))
-				line = fmt.Sprintf("%s %s... %s (%s/s)\n", t.verbing, task.Name, size, speed)
+				line = fmt.Sprintf("%s... %s (%s/s)\n", task.Name, size, speed)
 			}
 			done = false
 		}
@@ -166,6 +180,80 @@ func bytesStr(b uint64) string {
 	return strings.ReplaceAll(size, " ", "")
 }
 
+type BytesBarTracker struct {
+	proc *mpb.Progress
+
+	tasks []*Task[BytesTask]
+	bars  []*mpb.Bar
+}
+
+func NewBytesBarTracker(tasks []*Task[BytesTask]) Tracker[BytesTask] {
+	t := &BytesBarTracker{proc: mpb.New()}
+	for _, task := range tasks {
+		t.initTask(task)
+	}
+	return t
+}
+
+func (t *BytesBarTracker) Render(_ int) func() {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range time.Tick(renderInterval) {
+			if t.loop() {
+				return
+			}
+		}
+	}()
+	return func() {
+		<-done
+		t.proc.Wait()
+	}
+}
+
+func (t *BytesBarTracker) loop() bool {
+	done := true
+	for i, task := range t.tasks {
+		bar := t.bars[i]
+		cur := task.Value.size
+		if task.done {
+			cur = task.Value.total
+		} else {
+			done = false
+		}
+		bar.SetCurrent(int64(cur))
+	}
+	return done
+}
+
+func (t *BytesBarTracker) Add(task *Task[BytesTask]) {}
+
+func (t *BytesBarTracker) initTask(task *Task[BytesTask]) {
+	bar := t.proc.AddBar(int64(task.Value.total),
+		mpb.BarFillerClearOnComplete(),
+		mpb.PrependDecorators(
+			decor.Name(task.Name, decor.WC{W: len(task.Name) + 3, C: decor.DidentRight}),
+			decor.OnComplete(decor.CurrentKibiByte("%2d"), ""),
+			decor.OnComplete(decor.AverageSpeed(decor.UnitKiB, " [%d] "), ""),
+			decor.OnComplete(decor.AverageETA(decor.ET_STYLE_MMSS), ""),
+		),
+		mpb.AppendDecorators(
+			decor.OnComplete(decor.Percentage(), ""),
+			decor.Any(func(s decor.Statistics) string {
+				if s.Completed {
+					if task.fail {
+						return term.Color("red|failed|")
+					}
+					return fmt.Sprintf("%s done", task.Value.totalStr)
+				}
+				return ""
+			}),
+		),
+	)
+	t.bars = append(t.bars, bar)
+	t.tasks = append(t.tasks, task)
+}
+
 type Bytes struct {
 	Tracker Tracker[BytesTask]
 
@@ -179,6 +267,8 @@ func (b *Bytes) Download(dir string) error {
 	if err != nil {
 		return errors.Trace(err, "ensure dir")
 	}
+
+	setBytesTaskTotalStr(b.Tasks)
 
 	now := time.Now().Unix()
 	for _, task := range b.Tasks {
