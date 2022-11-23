@@ -263,9 +263,11 @@ type Bytes struct {
 }
 
 func (b *Bytes) Download(dir string) error {
-	err := osutil.EnsureDir(dir)
-	if err != nil {
-		return errors.Trace(err, "ensure dir")
+	if dir != "" {
+		err := osutil.EnsureDir(dir)
+		if err != nil {
+			return errors.Trace(err, "ensure dir")
+		}
 	}
 
 	setBytesTaskTotalStr(b.Tasks)
