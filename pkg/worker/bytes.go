@@ -232,7 +232,7 @@ func (t *BytesBarTracker) initTask(task *Task[BytesTask]) {
 	bar := t.proc.AddBar(int64(task.Value.total),
 		mpb.BarFillerClearOnComplete(),
 		mpb.PrependDecorators(
-			decor.Name(task.Name, decor.WC{W: len(task.Name) + 3, C: decor.DidentRight}),
+			decor.Name(task.Name+strings.Repeat(" ", 10), decor.WCSyncWidthR),
 			decor.OnComplete(decor.CurrentKibiByte("%2d"), ""),
 			decor.OnComplete(decor.AverageSpeed(decor.UnitKiB, " [%d] "), ""),
 			decor.OnComplete(decor.AverageETA(decor.ET_STYLE_MMSS), ""),

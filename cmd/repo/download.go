@@ -25,6 +25,8 @@ type DownloadFlags struct {
 	NoBar bool
 
 	LogPath string
+
+	Latest bool
 }
 
 var Download = app.Register(&app.Command[DownloadFlags, Data]{
@@ -47,6 +49,8 @@ var Download = app.Register(&app.Command[DownloadFlags, Data]{
 		cmd.Flags().BoolVarP(&flags.NoBar, "no-bar", "n", false, "donot show download bar")
 
 		cmd.Flags().StringVarP(&flags.LogPath, "log-path", "", "", "error log path")
+
+		cmd.Flags().BoolVarP(&flags.Latest, "latest", "l", false, "use latest release")
 	},
 
 	Run: func(ctx *app.Context[DownloadFlags, Data]) error {
@@ -122,19 +126,20 @@ var Download = app.Register(&app.Command[DownloadFlags, Data]{
 			Tasks:   tasks,
 			LogPath: ctx.Flags.LogPath,
 		}
+		term.PrintOperation("begin to download %s", fileWord)
 		return w.Download(ctx.Flags.Output)
 	},
 })
 
 func downloadGetRelease(ctx *app.Context[DownloadFlags, Data], repo *core.Repository) ([]*api.Release, error) {
 	var err error
-	if ctx.Flags.Tag != "" {
+	if ctx.Flags.Tag != "" || ctx.Flags.Latest {
 		var release *api.Release
 		err = execProvider("get release by tag", ctx.Data.Remote, func(p api.Provider) error {
 			release, err = p.GetRelease(repo, ctx.Flags.Tag)
 			return err
 		})
-		return []*api.Release{release}, nil
+		return []*api.Release{release}, err
 	}
 
 	var releases []*api.Release
