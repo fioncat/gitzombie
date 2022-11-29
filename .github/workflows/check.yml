@@ -1,4 +1,4 @@
-name: Build Go
+name: Check Go
 
 on:
   push:
@@ -20,14 +20,8 @@ jobs:
       with:
         go-version: 1.19.2
 
-    - name: Install goimports
-      run: go install golang.org/x/tools/cmd/goimports@latest
+    - name: Install check tools
+      run: make install-check
 
-    - name: Check go format
-      run: bash hack/check-fmt.sh
-
-    - name: Test
-      run: go test ./...
-
-    - name: Build
-      run: make build
+    - name: Check Go
+      run: make check

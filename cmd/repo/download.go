@@ -67,6 +67,9 @@ var Download = app.Register(&app.Command[DownloadFlags, Data]{
 					return err
 				}
 				repo, err = core.WorkspaceRepository(ctx.Data.Remote, apiRepo.Name)
+				if err != nil {
+					return err
+				}
 			} else {
 				repo, err = getLocal(ctx, ctx.Arg(1))
 			}
