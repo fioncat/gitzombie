@@ -2,6 +2,7 @@ package repo
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
@@ -226,4 +227,19 @@ func (task *CloneTask) Execute() error {
 
 		Path: task.Path,
 	})
+}
+
+func deleteRepo(store *core.RepositoryStorage, repo *core.Repository) error {
+	_, err := os.Stat(repo.Path)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err == nil {
+		err = os.RemoveAll(repo.Path)
+		if err != nil {
+			return errors.Trace(err, "remove dir for repo %q", repo.FullName())
+		}
+	}
+	store.Delete(repo)
+	return nil
 }

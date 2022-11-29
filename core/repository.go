@@ -134,10 +134,6 @@ func (repo *Repository) MarkAccess() {
 }
 
 var (
-	hourSeconds int64 = int64(time.Hour.Seconds())
-	daySeconds  int64 = hourSeconds * 24
-	weekSeconds int64 = daySeconds * 7
-
 	hourFactor  uint64 = 16
 	dayFactor   uint64 = 8
 	weekFactor  uint64 = 2
@@ -165,13 +161,13 @@ func (repo *Repository) Score() uint64 {
 	}
 	var factor uint64
 	switch {
-	case delta <= hourSeconds:
+	case delta <= config.HourSeconds:
 		factor = hourFactor
 
-	case delta <= daySeconds:
+	case delta <= config.DaySeconds:
 		factor = dayFactor
 
-	case delta <= weekSeconds:
+	case delta <= config.WeekSeconds:
 		factor = weekFactor
 
 	default:

@@ -105,7 +105,6 @@ func syncStorage(ctx *app.Context[SyncFlags, SyncData]) error {
 		return err
 	}
 	if len(tasks) == 0 {
-		term.Print("no repo to clone")
 		return nil
 	}
 
@@ -183,7 +182,6 @@ func syncWorkspace(ctx *app.Context[SyncFlags, SyncData]) error {
 			if err != nil {
 				return errors.Trace(err, "add repo")
 			}
-			term.PrintOperation("add workspace repo %s to storage", repo.FullName())
 		}
 	}
 	return nil

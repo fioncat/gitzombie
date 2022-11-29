@@ -10,7 +10,7 @@ import (
 
 var Attach = app.Register(&app.Command[app.Empty, Data]{
 	Use:  "attach {remote} {repo}",
-	Desc: "attach current path to a repo",
+	Desc: "Attach current path to a repo",
 
 	Init: initData[app.Empty],
 

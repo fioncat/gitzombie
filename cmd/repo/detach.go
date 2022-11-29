@@ -8,7 +8,7 @@ import (
 
 var Detach = app.Register(&app.Command[app.Empty, Data]{
 	Use:  "detach {remote} {repo}",
-	Desc: "detach current path",
+	Desc: "Detach current path",
 
 	Init: initData[app.Empty],
 
