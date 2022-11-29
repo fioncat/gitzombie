@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/fioncat/gitzombie/pkg/errors"
 	"github.com/fioncat/gitzombie/pkg/osutil"
@@ -112,4 +113,20 @@ func GetDir(names ...string) string {
 
 func GetLocalDir(names ...string) string {
 	return getDir(localDir, names...)
+}
+
+var (
+	nowUnix int64
+	nowOnce sync.Once
+)
+
+var (
+	HourSeconds int64 = int64(time.Hour.Seconds())
+	DaySeconds  int64 = HourSeconds * 24
+	WeekSeconds int64 = DaySeconds * 7
+)
+
+func Now() int64 {
+	nowOnce.Do(func() { nowUnix = time.Now().Unix() })
+	return nowUnix
 }

@@ -14,7 +14,7 @@ import (
 
 const jumpKeywordName = "jump_keyword"
 
-var jumpKeywordExpireSeconds = daySeconds
+var jumpKeywordExpireSeconds = config.DaySeconds
 
 type JumpKeywordStorage struct {
 	data map[string]int64
