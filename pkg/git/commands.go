@@ -192,3 +192,28 @@ func PushTag(tag string, remote string, remove bool, opts *Options) error {
 func ListTags(opts *Options) ([]string, error) {
 	return OutputItems([]string{"tag"}, opts)
 }
+
+func ListCommitsBetween(target string, opts *Options) ([]string, error) {
+	args := []string{
+		"log", "--left-right", "--cherry-pick", "--oneline",
+		fmt.Sprintf("HEAD...%s", target),
+	}
+	items, err := OutputItems(args, opts)
+	if err != nil {
+		return nil, err
+	}
+	commits := make([]string, 0, len(items))
+	for _, item := range items {
+		if !strings.HasPrefix(item, "<") {
+			// If the commit message output by "git log xxx" does not start
+			// with "<", it means that this commit is from the target branch.
+			// Since we only list commits from current branch, ignore such
+			// commits.
+			continue
+		}
+		item = strings.TrimPrefix(item, "<")
+		item = strings.TrimSpace(item)
+		commits = append(commits, item)
+	}
+	return commits, nil
+}
