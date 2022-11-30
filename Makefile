@@ -1,5 +1,7 @@
-COMMIT=$(shell git log -1 --pretty=format:"%h")
+COMMIT=$(shell git rev-parse HEAD)
 TAG=$(shell git describe --tags --abbrev=0 2>/dev/null)
+
+DATE=$(shell date '+%FT%TZ')
 
 VERSION=$(if $(TAG),$(TAG),commit-$(COMMIT))
 
@@ -9,11 +11,11 @@ fmt:
 
 .PHONY: install
 install:
-	@go install -ldflags="-X 'main.Version=$(VERSION)'"
+	@go install -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT)' -X 'main.BuildDate=$(DATE)'"
 
 .PHONY: build
 build:
-	@go build -ldflags="-X 'main.Version=$(VERSION)'"
+	@go build -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT)' -X 'main.BuildDate=$(DATE)'" -o bin/gitzombie
 
 
 .PHONY: install-check

@@ -26,7 +26,7 @@ for target in "${targets[@]}"; do
 	IFS='_' read -r -a tmp <<< "$target"
 	BUILD_OS="${tmp[0]}"
 	BUILD_ARCH="${tmp[1]}"
-	GOOS="${BUILD_OS}" GOARCH="${BUILD_ARCH}" go build -ldflags="-X 'main.Version=${VERSION}'" -o bin/gitzombie
+	make build GOOS="${BUILD_OS}" GOARCH="${BUILD_ARCH}" VERSION="${VERSION}"
 	zip -r out/gitzombie-${target}.zip ./bin LICENSE
 done
 
