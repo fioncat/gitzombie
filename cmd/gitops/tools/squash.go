@@ -15,7 +15,6 @@ import (
 
 type SquashFlags struct {
 	Remote string
-	Target string
 
 	Message string
 
@@ -28,15 +27,15 @@ type SquashData struct {
 }
 
 var Squash = app.Register(&app.Command[SquashFlags, SquashData]{
-	Use:  "squash [-r remote] [-t target] [-n num] [-m message]",
+	Use:  "squash [-r remote] [-n num] [-m message] [target]",
 	Desc: "Squash multiple commits into one",
 
 	Prepare: func(cmd *cobra.Command, flags *SquashFlags) {
 		cmd.Flags().StringVarP(&flags.Remote, "remote", "r", "origin", "remote name")
 		cmd.RegisterFlagCompletionFunc("remote", app.Comp(app.CompGitRemote))
 
-		cmd.Flags().StringVarP(&flags.Target, "target", "t", "", "target branch")
-		cmd.RegisterFlagCompletionFunc("target", app.Comp(app.CompGitLocalBranch(false)))
+		cmd.Args = cobra.MaximumNArgs(1)
+		cmd.ValidArgsFunction = app.Comp(app.CompGitLocalBranch(false))
 
 		cmd.Flags().IntVarP(&flags.Num, "num", "n", 0, "number of commits to squash")
 
@@ -44,7 +43,7 @@ var Squash = app.Register(&app.Command[SquashFlags, SquashData]{
 	},
 
 	Init: func(ctx *app.Context[SquashFlags, SquashData]) error {
-		target := ctx.Flags.Target
+		target := ctx.Arg(0)
 		if target == "" {
 			mainBranch, err := git.GetMainBranch(ctx.Flags.Remote, git.Default)
 			if err != nil {

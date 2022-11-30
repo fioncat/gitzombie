@@ -191,3 +191,7 @@ func ListLocalBranchNames(current bool, opts *Options) ([]string, error) {
 	}
 	return names, nil
 }
+
+func Pull(opts *Options) error {
+	return Exec([]string{"pull"}, opts)
+}
