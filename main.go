@@ -22,11 +22,11 @@ var versionCmd = &cobra.Command{
 	Short: "Show full version, include build info",
 
 	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Printf("Version:    %s\n", Version)
-		fmt.Printf("Commit:     %s\n", Commit)
-		fmt.Printf("BuildDate:  %s\n", BuildDate)
-		fmt.Printf("Platform:   %s\n", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
-		fmt.Printf("GoVersion:  %s\n", runtime.Version())
+		fmt.Printf("Version:   %s\n", Version)
+		fmt.Printf("Commit:    %s\n", Commit)
+		fmt.Printf("BuildTime: %s\n", BuildDate)
+		fmt.Printf("Platform:  %s\n", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
+		fmt.Printf("GoVersion: %s\n", runtime.Version())
 	},
 }
 
