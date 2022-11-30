@@ -53,7 +53,7 @@ func GetJobPath(name string) (string, error) {
 
 func (job *Job) Execute(root string, env osutil.Env) error {
 	if key, skip := job.Skip(env); skip {
-		job.Say("skip blue|%s| because of unbound env red|%s|", job.Name, key)
+		job.Say("skip job %q because of unbound env %q", job.Name, key)
 		return nil
 	}
 
@@ -62,7 +62,7 @@ func (job *Job) Execute(root string, env osutil.Env) error {
 	if err != nil {
 		return err
 	}
-	job.Say("blue|%s|", job.Name)
+	job.Say("running %s", job.Name)
 
 	err = cmd.Run()
 	if err != nil {

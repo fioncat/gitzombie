@@ -103,7 +103,7 @@ func (b *Builder) Execute() error {
 	}
 
 	for _, file := range b.Files {
-		term.PrintOperation("blue|write file %s|", file.Name)
+		term.PrintOperation("write file %q", file.Name)
 		err = b.executeFile(file)
 		if err != nil {
 			return err

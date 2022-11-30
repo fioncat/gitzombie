@@ -89,9 +89,9 @@ func (t *jobTracker[T]) render() {
 		doneStr := fmt.Sprintf(t.doneFmt, t.done)
 		var line string
 		if task.fail {
-			line = fmt.Sprintf("red|(%s/%d)| %s failed\n", doneStr, t.total, task.Name)
+			line = fmt.Sprintf("red|(%s/%d) %s failed|\n", doneStr, t.total, task.Name)
 		} else {
-			line = fmt.Sprintf("green|(%s/%d)| %s done\n", doneStr, t.total, task.Name)
+			line = fmt.Sprintf("bold|(%s/%d)| %s done\n", doneStr, t.total, task.Name)
 		}
 		out.WriteString(line)
 	}
