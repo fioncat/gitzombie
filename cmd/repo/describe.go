@@ -32,10 +32,6 @@ var Describe = app.Register(&app.Command[app.Empty, core.RepositoryStorage]{
 			if err != nil {
 				return err
 			}
-			remote, err = core.GetRemote(repo.Remote)
-			if err != nil {
-				return err
-			}
 		default:
 			remote, err = core.GetRemote(ctx.Arg(0))
 			if err != nil {
