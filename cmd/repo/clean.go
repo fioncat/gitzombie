@@ -127,7 +127,7 @@ var Clean = app.Register(&app.Command[CleanFlags, CleanData]{
 		term.ConfirmExit("continue")
 
 		for _, item := range items {
-			err := deleteRepo(ctx.Data.Store, item.Repo)
+			err := ctx.Data.Store.DeleteAll(item.Repo)
 			if err != nil {
 				return err
 			}

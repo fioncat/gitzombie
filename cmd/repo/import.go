@@ -22,7 +22,7 @@ type ImportFlags struct {
 	LogPath string
 }
 
-var Import = app.Register(&app.Command[ImportFlags, Data]{
+var Import = app.Register(&app.Command[ImportFlags, core.RepositoryStorage]{
 	Use:  "import [-i ignore-repo]... {remote} {group}",
 	Desc: "Import repos to workspace",
 
@@ -36,13 +36,17 @@ var Import = app.Register(&app.Command[ImportFlags, Data]{
 		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompGroup)
 	},
 
-	Run: func(ctx *app.Context[ImportFlags, Data]) error {
+	Run: func(ctx *app.Context[ImportFlags, core.RepositoryStorage]) error {
 		group := ctx.Arg(1)
 		group = strings.Trim(group, "/")
 
+		remote, err := core.GetRemote(ctx.Arg(0))
+		if err != nil {
+			return err
+		}
+
 		var apiRepos []*api.Repository
-		var err error
-		err = execProvider("list repos", ctx.Data.Remote, func(p api.Provider) error {
+		err = api.Exec("list repos", remote, func(p api.Provider) error {
 			apiRepos, err = p.ListRepositories(group)
 			return err
 		})
@@ -66,7 +70,7 @@ var Import = app.Register(&app.Command[ImportFlags, Data]{
 		if err != nil {
 			return err
 		}
-		tasks, err := importGetTasks(ctx, apiRepos)
+		tasks, err := importGetTasks(ctx, remote, apiRepos)
 		if err != nil {
 			return err
 		}
@@ -115,17 +119,17 @@ func importFilterIgnore(apiRepos []*api.Repository, ignores []string) ([]*api.Re
 	return newRepos, nil
 }
 
-func importGetTasks(ctx *app.Context[ImportFlags, Data], apiRepos []*api.Repository) ([]*worker.Task[CloneTask], error) {
+func importGetTasks(ctx *app.Context[ImportFlags, core.RepositoryStorage], remote *core.Remote, apiRepos []*api.Repository) ([]*worker.Task[CloneTask], error) {
 	var err error
 	tasks := make([]*worker.Task[CloneTask], 0, len(apiRepos))
 	for _, apiRepo := range apiRepos {
-		repo := ctx.Data.Store.GetByName(ctx.Data.Remote.Name, apiRepo.Name)
+		repo := ctx.Data.GetByName(remote.Name, apiRepo.Name)
 		if repo == nil {
-			repo, err = core.WorkspaceRepository(ctx.Data.Remote, apiRepo.Name)
+			repo, err = core.WorkspaceRepository(remote, apiRepo.Name)
 			if err != nil {
 				return nil, errors.Trace(err, "convert repo %q", apiRepo.Name)
 			}
-			err = ctx.Data.Store.Add(repo)
+			err = ctx.Data.Add(repo)
 			if err != nil {
 				return nil, errors.Trace(err, "add repo %s", repo.Name)
 			}
@@ -137,11 +141,11 @@ func importGetTasks(ctx *app.Context[ImportFlags, Data], apiRepos []*api.Reposit
 		if exists {
 			continue
 		}
-		url, err := ctx.Data.Remote.GetCloneURL(repo)
+		url, err := remote.GetCloneURL(repo)
 		if err != nil {
 			return nil, errors.Trace(err, "get clone url")
 		}
-		user, email := ctx.Data.Remote.GetUserEmail(repo)
+		user, email := remote.GetUserEmail(repo)
 		tasks = append(tasks, &worker.Task[CloneTask]{
 			Name: repo.Name,
 			Value: &CloneTask{

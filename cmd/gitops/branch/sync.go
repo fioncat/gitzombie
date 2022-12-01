@@ -61,7 +61,7 @@ var Sync = app.Register(&app.Command[SyncFlags, SyncData]{
 		branchWord := english.PluralWord(len(branches), "branch", "")
 		term.Print("found magenta|%d| %s", len(branches), branchWord)
 
-		mainBranch, err := git.GetMainBranch(ctx.Flags.Remote, git.Default)
+		mainBranch, err := git.GetDefaultBranch(ctx.Flags.Remote, git.Default)
 		if err != nil {
 			return err
 		}

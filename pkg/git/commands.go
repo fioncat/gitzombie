@@ -151,13 +151,15 @@ func Fetch(remote string, branch, tag bool, opts *Options) error {
 	return Exec(args, opts)
 }
 
-func GetMainBranch(remote string, opts *Options) (string, error) {
+func GetDefaultBranch(remote string, opts *Options) (string, error) {
 	ref := fmt.Sprintf("refs/remotes/%s/", remote)
 	headRef := filepath.Join(ref, "HEAD")
 
 	out, err := Output([]string{"symbolic-ref", headRef}, opts)
 	if err != nil {
-		return "", err
+		// If failed, user might not switch to this branch yet, let's
+		// use "git show <remote>" instread to get default branch.
+		return getDefaultBranchByShow(remote, opts)
 	}
 
 	if out == "" {
@@ -168,6 +170,26 @@ func GetMainBranch(remote string, opts *Options) (string, error) {
 	}
 	main := strings.TrimPrefix(out, ref)
 	return main, nil
+}
+
+func getDefaultBranchByShow(remote string, opts *Options) (string, error) {
+	lines, err := OutputItems([]string{
+		"remote", "show", remote,
+	}, opts)
+	if err != nil {
+		return "", err
+	}
+	for _, line := range lines {
+		if strings.HasPrefix(line, "HEAD branch:") {
+			b := strings.TrimPrefix(line, "HEAD branch:")
+			b = strings.TrimSpace(b)
+			if b == "" {
+				return "", fmt.Errorf("invalid HEAD branch line %q, please check your git command", line)
+			}
+			return b, nil
+		}
+	}
+	return "", fmt.Errorf("cannot find HEAD branch, please check your git command")
 }
 
 func GetCurrentBranch(opts *Options) (string, error) {

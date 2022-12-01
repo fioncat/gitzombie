@@ -436,6 +436,67 @@ func (s *RepositoryStorage) ReadOnly() {
 	s.readonly = true
 }
 
+func (s *RepositoryStorage) DeleteAll(repo *Repository) error {
+	_, err := os.Stat(repo.Path)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err == nil {
+		err = os.RemoveAll(repo.Path)
+		if err != nil {
+			return errors.Trace(err, "remove dir for repo %q", repo.FullName())
+		}
+	}
+	s.Delete(repo)
+	return nil
+}
+
+func (s *RepositoryStorage) GetCurrent() (*Repository, error) {
+	path, err := git.EnsureCurrent()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetByPath(path)
+}
+
+func (s *RepositoryStorage) GetLocal(remote *Remote, name string) (*Repository, error) {
+	if strings.HasSuffix(name, "/") || name == "" {
+		group := strings.Trim(name, "/")
+		allRepos := s.List(remote.Name)
+		var repos []*Repository
+		var items []string
+		for _, repo := range allRepos {
+			if group != "" && repo.Group() != group {
+				continue
+			}
+			repos = append(repos, repo)
+			var item string
+			if group != "" {
+				item = repo.Base()
+			} else {
+				item = repo.Name
+			}
+			items = append(items, item)
+		}
+		idx, err := term.FuzzySearch("repo", items)
+		if err != nil {
+			return nil, errors.Trace(err, "fzf search")
+		}
+		return repos[idx], nil
+	}
+
+	var err error
+	repo := s.GetByName(remote.Name, name)
+	if repo == nil {
+		repo, err = WorkspaceRepository(remote, name)
+		if err != nil {
+			return nil, errors.Trace(err, "create repository")
+		}
+	}
+	return repo, nil
+}
+
 type parseRepositoryStorageError struct {
 	path string
 	err  error

@@ -29,7 +29,7 @@ type DownloadFlags struct {
 	Latest bool
 }
 
-var Download = app.Register(&app.Command[DownloadFlags, Data]{
+var Download = app.Register(&app.Command[DownloadFlags, core.RepositoryStorage]{
 	Use:  "download {remote} {repo} [-t tag] [-s] [-p pattern] [-o out] [--no-bar]",
 	Desc: "Download files from release",
 
@@ -53,32 +53,41 @@ var Download = app.Register(&app.Command[DownloadFlags, Data]{
 		cmd.Flags().BoolVarP(&flags.Latest, "latest", "l", false, "use latest release")
 	},
 
-	Run: func(ctx *app.Context[DownloadFlags, Data]) error {
+	Run: func(ctx *app.Context[DownloadFlags, core.RepositoryStorage]) error {
 		var repo *core.Repository
+		var remote *core.Remote
 		var err error
 		switch ctx.ArgLen() {
 		case 0:
-			repo, err = getCurrent(ctx)
+			repo, err = ctx.Data.GetCurrent()
+			if err != nil {
+				return err
+			}
+			remote, err = core.GetRemote(repo.Remote)
+			if err != nil {
+				return err
+			}
 
 		default:
+			remote, err = core.GetRemote(ctx.Arg(0))
 			if ctx.Flags.Search {
-				apiRepo, err := apiSearch(ctx, ctx.Arg(1))
+				apiRepo, err := api.SearchRepo(remote, ctx.Arg(1))
 				if err != nil {
 					return err
 				}
-				repo, err = core.WorkspaceRepository(ctx.Data.Remote, apiRepo.Name)
+				repo, err = core.WorkspaceRepository(remote, apiRepo.Name)
 				if err != nil {
 					return err
 				}
 			} else {
-				repo, err = getLocal(ctx, ctx.Arg(1))
+				repo, err = ctx.Data.GetLocal(remote, ctx.Arg(1))
 			}
 		}
 		if err != nil {
 			return err
 		}
 
-		releases, err := downloadGetRelease(ctx, repo)
+		releases, err := downloadGetRelease(ctx, remote, repo)
 		if err != nil {
 			return err
 		}
@@ -103,7 +112,7 @@ var Download = app.Register(&app.Command[DownloadFlags, Data]{
 		term.ConfirmExit("Do you want to download %s", fileWord)
 
 		tasks := make([]*worker.Task[worker.BytesTask], len(files))
-		err = execProvider("open release download stream", ctx.Data.Remote, func(p api.Provider) error {
+		err = api.Exec("open release download stream", remote, func(p api.Provider) error {
 			for i, file := range files {
 				reader, err := p.DownloadReleaseFile(repo, file)
 				if err != nil {
@@ -134,11 +143,11 @@ var Download = app.Register(&app.Command[DownloadFlags, Data]{
 	},
 })
 
-func downloadGetRelease(ctx *app.Context[DownloadFlags, Data], repo *core.Repository) ([]*api.Release, error) {
+func downloadGetRelease(ctx *app.Context[DownloadFlags, core.RepositoryStorage], remote *core.Remote, repo *core.Repository) ([]*api.Release, error) {
 	var err error
 	if ctx.Flags.Tag != "" || ctx.Flags.Latest {
 		var release *api.Release
-		err = execProvider("get release by tag", ctx.Data.Remote, func(p api.Provider) error {
+		err = api.Exec("get release by tag", remote, func(p api.Provider) error {
 			release, err = p.GetRelease(repo, ctx.Flags.Tag)
 			return err
 		})
@@ -146,7 +155,7 @@ func downloadGetRelease(ctx *app.Context[DownloadFlags, Data], repo *core.Reposi
 	}
 
 	var releases []*api.Release
-	err = execProvider("list releases", ctx.Data.Remote, func(p api.Provider) error {
+	err = api.Exec("list releases", remote, func(p api.Provider) error {
 		releases, err = p.ListReleases(repo)
 		return err
 	})

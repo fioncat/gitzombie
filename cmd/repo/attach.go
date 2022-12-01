@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"github.com/fioncat/gitzombie/api"
 	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/git"
@@ -8,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Attach = app.Register(&app.Command[app.Empty, Data]{
+var Attach = app.Register(&app.Command[app.Empty, core.RepositoryStorage]{
 	Use:  "attach {remote} {repo}",
 	Desc: "Attach current path to a repo",
 
@@ -19,29 +20,34 @@ var Attach = app.Register(&app.Command[app.Empty, Data]{
 		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompGroup)
 	},
 
-	Run: func(ctx *app.Context[app.Empty, Data]) error {
+	Run: func(ctx *app.Context[app.Empty, core.RepositoryStorage]) error {
 		dir, err := git.EnsureCurrent()
 		if err != nil {
 			return err
 		}
 
-		apiRepo, err := apiSearch(ctx, ctx.Arg(1))
+		remote, err := core.GetRemote(ctx.Arg(0))
 		if err != nil {
 			return err
 		}
 
-		repo, err := core.AttachRepository(ctx.Data.Remote, apiRepo.Name, dir)
+		apiRepo, err := api.SearchRepo(remote, ctx.Arg(1))
 		if err != nil {
 			return err
 		}
 
-		err = ctx.Data.Store.Add(repo)
+		repo, err := core.AttachRepository(remote, apiRepo.Name, dir)
+		if err != nil {
+			return err
+		}
+
+		err = ctx.Data.Add(repo)
 		if err != nil {
 			return err
 		}
 
 		if term.Confirm("overwrite git url") {
-			url, err := ctx.Data.Remote.GetCloneURL(repo)
+			url, err := remote.GetCloneURL(repo)
 			if err != nil {
 				return err
 			}
@@ -52,7 +58,7 @@ var Attach = app.Register(&app.Command[app.Empty, Data]{
 		}
 
 		if term.Confirm("overwrite user and email") {
-			user, email := ctx.Data.Remote.GetUserEmail(repo)
+			user, email := remote.GetUserEmail(repo)
 			err = git.Config("user.name", user, git.Default)
 			if err != nil {
 				return err

@@ -19,6 +19,8 @@ type SquashFlags struct {
 	Message string
 
 	Num int
+
+	Upstream bool
 }
 
 type SquashData struct {
@@ -27,11 +29,11 @@ type SquashData struct {
 }
 
 var Squash = app.Register(&app.Command[SquashFlags, SquashData]{
-	Use:  "squash [-r remote] [-n num] [-m message] [target]",
+	Use:  "squash [-r remote] [-n num] [-m message] [branch] [-u]",
 	Desc: "Squash multiple commits into one",
 
 	Prepare: func(cmd *cobra.Command, flags *SquashFlags) {
-		cmd.Flags().StringVarP(&flags.Remote, "remote", "r", "origin", "remote name")
+		cmd.Flags().StringVarP(&flags.Remote, "remote", "r", "", "remote name")
 		cmd.RegisterFlagCompletionFunc("remote", app.Comp(app.CompGitRemote))
 
 		cmd.Args = cobra.MaximumNArgs(1)
@@ -40,17 +42,14 @@ var Squash = app.Register(&app.Command[SquashFlags, SquashData]{
 		cmd.Flags().IntVarP(&flags.Num, "num", "n", 0, "number of commits to squash")
 
 		cmd.Flags().StringVarP(&flags.Message, "message", "m", "", "commit message")
+		cmd.Flags().BoolVarP(&flags.Upstream, "upstream", "u", false, "use upstream")
 	},
 
 	Init: func(ctx *app.Context[SquashFlags, SquashData]) error {
-		target := ctx.Arg(0)
-		if target == "" {
-			mainBranch, err := git.GetMainBranch(ctx.Flags.Remote, git.Default)
-			if err != nil {
-				return err
-			}
-			target = mainBranch
-			term.Print("use target green|%s|", target)
+		branch := ctx.Arg(0)
+		target, _, err := getTarget(branch, ctx.Flags.Remote, ctx.Flags.Upstream)
+		if err != nil {
+			return err
 		}
 
 		commits, err := git.ListCommitsBetween(target, git.Default)
@@ -90,7 +89,7 @@ var Squash = app.Register(&app.Command[SquashFlags, SquashData]{
 		term.Print("")
 		term.Print("found green|%s| to squash:", ctx.Data.Word)
 		for _, commit := range commits {
-			term.Print("* %s", commit)
+			term.Print("  * %s", commit)
 		}
 		term.ConfirmExit("continue")
 

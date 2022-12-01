@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Open = app.Register(&app.Command[app.Empty, Data]{
+var Open = app.Register(&app.Command[app.Empty, core.RepositoryStorage]{
 	Use:    "repo {remote} {repo}",
 	Desc:   "Open repo in default browser",
 	Action: "Open",
@@ -20,24 +20,34 @@ var Open = app.Register(&app.Command[app.Empty, Data]{
 		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompRepo)
 	},
 
-	Run: func(ctx *app.Context[app.Empty, Data]) error {
-		ctx.Data.Store.ReadOnly()
+	Run: func(ctx *app.Context[app.Empty, core.RepositoryStorage]) error {
+		ctx.Data.ReadOnly()
 		var apiRepo *api.Repository
 		var err error
 		switch ctx.ArgLen() {
 		case 0:
 			var repo *core.Repository
-			repo, err = getCurrent(ctx)
+			repo, err = ctx.Data.GetCurrent()
 			if err != nil {
 				return err
 			}
-			apiRepo, err = apiGet(ctx, repo)
+			remote, err := core.GetRemote(repo.Remote)
+			if err != nil {
+				return err
+			}
+
+			apiRepo, err = api.GetRepo(remote, repo)
 			if err != nil {
 				return err
 			}
 
 		default:
-			apiRepo, err = apiSearch(ctx, ctx.Arg(1))
+			remote, err := core.GetRemote(ctx.Arg(0))
+			if err != nil {
+				return err
+			}
+
+			apiRepo, err = api.SearchRepo(remote, ctx.Arg(1))
 			if err != nil {
 				return err
 			}
