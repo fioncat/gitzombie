@@ -15,6 +15,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
+func init() {
+	api.Register("github", New)
+}
+
 type pullOptions struct {
 	Owner string
 	Name  string

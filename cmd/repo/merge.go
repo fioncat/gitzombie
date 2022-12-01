@@ -24,7 +24,7 @@ type MergeFlags struct {
 	SourceBranch string
 }
 
-var Merge = app.Register(&app.Command[MergeFlags, Data]{
+var Merge = app.Register(&app.Command[MergeFlags, core.RepositoryStorage]{
 	Use:  "merge [-u] [-s source-branch] [-t target-branch]",
 	Desc: "Create or open MergeRequest (PR in Github)",
 
@@ -41,19 +41,24 @@ var Merge = app.Register(&app.Command[MergeFlags, Data]{
 		cmd.Args = cobra.ExactArgs(0)
 	},
 
-	Run: func(ctx *app.Context[MergeFlags, Data]) error {
-		ctx.Data.Store.ReadOnly()
+	Run: func(ctx *app.Context[MergeFlags, core.RepositoryStorage]) error {
+		ctx.Data.ReadOnly()
 		err := git.EnsureNoUncommitted(git.Default)
 		if err != nil {
 			return err
 		}
 
-		repo, err := getCurrent(ctx)
+		var repo *core.Repository
+		repo, err = ctx.Data.GetCurrent()
+		if err != nil {
+			return err
+		}
+		remote, err := core.GetRemote(repo.Remote)
 		if err != nil {
 			return err
 		}
 
-		apiRepo, err := apiGet(ctx, repo)
+		apiRepo, err := api.GetRepo(remote, repo)
 		if err != nil {
 			return err
 		}
@@ -64,7 +69,7 @@ var Merge = app.Register(&app.Command[MergeFlags, Data]{
 		}
 
 		var url string
-		err = execProvider("get merge", ctx.Data.Remote, func(p api.Provider) error {
+		err = api.Exec("get merge", remote, func(p api.Provider) error {
 			url, err = p.GetMerge(repo, *opts)
 			return err
 		})
@@ -88,7 +93,7 @@ var Merge = app.Register(&app.Command[MergeFlags, Data]{
 		mergeShowInfo(repo, opts)
 		term.ConfirmExit("continue")
 
-		err = execProvider("create merge", ctx.Data.Remote, func(p api.Provider) error {
+		err = api.Exec("create merge", remote, func(p api.Provider) error {
 			url, err = p.CreateMerge(repo, *opts)
 			return err
 		})
@@ -100,7 +105,7 @@ var Merge = app.Register(&app.Command[MergeFlags, Data]{
 	},
 })
 
-func mergeBuildOptions(ctx *app.Context[MergeFlags, Data], apiRepo *api.Repository) (*api.MergeOption, error) {
+func mergeBuildOptions(ctx *app.Context[MergeFlags, core.RepositoryStorage], apiRepo *api.Repository) (*api.MergeOption, error) {
 	tar := ctx.Flags.TargetBranch
 	if tar == "" {
 		tar = apiRepo.DefaultBranch

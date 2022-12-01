@@ -13,6 +13,10 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
+func init() {
+	api.Register("gitlab", New)
+}
+
 type Provider struct {
 	cli    *gitlab.Client
 	remote *core.Remote

@@ -12,7 +12,7 @@ type ListFlags struct {
 	Group bool
 }
 
-var List = app.Register(&app.Command[ListFlags, Data]{
+var List = app.Register(&app.Command[ListFlags, core.RepositoryStorage]{
 	Use:    "repo {remote} {repo}",
 	Desc:   "list remotes or repos",
 	Action: "List",
@@ -22,10 +22,11 @@ var List = app.Register(&app.Command[ListFlags, Data]{
 	Prepare: func(cmd *cobra.Command, flags *ListFlags) {
 		cmd.Args = cobra.MaximumNArgs(2)
 		cmd.Flags().BoolVarP(&flags.Group, "group", "", false, "list group")
+		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompRepo)
 	},
 
-	Run: func(ctx *app.Context[ListFlags, Data]) error {
-		ctx.Data.Store.ReadOnly()
+	Run: func(ctx *app.Context[ListFlags, core.RepositoryStorage]) error {
+		ctx.Data.ReadOnly()
 		remoteName := ctx.Arg(0)
 		if remoteName == "" {
 			remoteNames, err := core.ListRemoteNames()
@@ -38,7 +39,7 @@ var List = app.Register(&app.Command[ListFlags, Data]{
 			return nil
 		}
 
-		repos := ctx.Data.Store.List(remoteName)
+		repos := ctx.Data.List(remoteName)
 		if ctx.Flags.Group {
 			groups := core.ConvertToGroups(repos)
 			for _, group := range groups {

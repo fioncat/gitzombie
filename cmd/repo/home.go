@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fioncat/gitzombie/api"
 	"github.com/fioncat/gitzombie/cmd/app"
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/errors"
@@ -16,7 +17,7 @@ type HomeFlags struct {
 	Search bool
 }
 
-var Home = app.Register(&app.Command[HomeFlags, Data]{
+var Home = app.Register(&app.Command[HomeFlags, core.RepositoryStorage]{
 	Use:  "home {remote} {repo}",
 	Desc: "Enter or clone a repo",
 
@@ -28,19 +29,24 @@ var Home = app.Register(&app.Command[HomeFlags, Data]{
 		cmd.Flags().BoolVarP(&flags.Search, "search", "s", false, "search from remote")
 	},
 
-	Run: func(ctx *app.Context[HomeFlags, Data]) error {
+	Run: func(ctx *app.Context[HomeFlags, core.RepositoryStorage]) error {
 		var repo *core.Repository
 		var err error
+		remote, err := core.GetRemote(ctx.Arg(0))
+		if err != nil {
+			return err
+		}
+
 		if ctx.Flags.Search {
-			repo, err = homeSearchRepo(ctx)
+			repo, err = homeSearchRepo(ctx, remote)
 		} else {
-			repo, err = getLocal(ctx, ctx.Arg(1))
+			repo, err = ctx.Data.GetLocal(remote, ctx.Arg(1))
 		}
 		if err != nil {
 			return err
 		}
 
-		err = homeEnsureRepo(ctx, repo)
+		err = homeEnsureRepo(ctx, remote, repo)
 		if err != nil {
 			return err
 		}
@@ -51,15 +57,15 @@ var Home = app.Register(&app.Command[HomeFlags, Data]{
 	},
 })
 
-func homeSearchRepo(ctx *app.Context[HomeFlags, Data]) (*core.Repository, error) {
-	apiRepo, err := apiSearch(ctx, ctx.Arg(1))
+func homeSearchRepo(ctx *app.Context[HomeFlags, core.RepositoryStorage], remote *core.Remote) (*core.Repository, error) {
+	apiRepo, err := api.SearchRepo(remote, ctx.Arg(1))
 	if err != nil {
 		return nil, err
 	}
 
-	repo := ctx.Data.Store.GetByName(ctx.Data.Remote.Name, apiRepo.Name)
+	repo := ctx.Data.GetByName(remote.Name, apiRepo.Name)
 	if repo == nil {
-		repo, err = core.WorkspaceRepository(ctx.Data.Remote, apiRepo.Name)
+		repo, err = core.WorkspaceRepository(remote, apiRepo.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -67,8 +73,8 @@ func homeSearchRepo(ctx *app.Context[HomeFlags, Data]) (*core.Repository, error)
 	return repo, nil
 }
 
-func homeEnsureRepo(ctx *app.Context[HomeFlags, Data], repo *core.Repository) error {
-	url, err := ctx.Data.Remote.GetCloneURL(repo)
+func homeEnsureRepo(ctx *app.Context[HomeFlags, core.RepositoryStorage], remote *core.Remote, repo *core.Repository) error {
+	url, err := remote.GetCloneURL(repo)
 	if err != nil {
 		return errors.Trace(err, "get clone url")
 	}
@@ -80,7 +86,7 @@ func homeEnsureRepo(ctx *app.Context[HomeFlags, Data], repo *core.Repository) er
 		if err != nil {
 			return err
 		}
-		user, email := ctx.Data.Remote.GetUserEmail(repo)
+		user, email := remote.GetUserEmail(repo)
 		err = git.Config("user.name", user, &git.Options{
 			Path: repo.Path,
 		})
@@ -104,8 +110,8 @@ func homeEnsureRepo(ctx *app.Context[HomeFlags, Data], repo *core.Repository) er
 		return errors.Trace(err, "check repo exists")
 	}
 
-	if ctx.Data.Store.GetByName(ctx.Data.Remote.Name, repo.Name) == nil {
-		return ctx.Data.Store.Add(repo)
+	if ctx.Data.GetByName(remote.Name, repo.Name) == nil {
+		return ctx.Data.Add(repo)
 	}
 	return nil
 }

@@ -2,11 +2,12 @@ package repo
 
 import (
 	"github.com/fioncat/gitzombie/cmd/app"
+	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/term"
 	"github.com/spf13/cobra"
 )
 
-var Delete = app.Register(&app.Command[app.Empty, Data]{
+var Delete = app.Register(&app.Command[app.Empty, core.RepositoryStorage]{
 	Use:    "repo {remote} {repo}",
 	Desc:   "delete a repo",
 	Action: "Delete",
@@ -18,8 +19,13 @@ var Delete = app.Register(&app.Command[app.Empty, Data]{
 		cmd.ValidArgsFunction = app.Comp(app.CompRemote, app.CompRepo)
 	},
 
-	Run: func(ctx *app.Context[app.Empty, Data]) error {
-		repo, err := getLocal(ctx, ctx.Arg(1))
+	Run: func(ctx *app.Context[app.Empty, core.RepositoryStorage]) error {
+		remote, err := core.GetRemote(ctx.Arg(0))
+		if err != nil {
+			return err
+		}
+
+		repo, err := ctx.Data.GetLocal(remote, ctx.Arg(1))
 		if err != nil {
 			return err
 		}
@@ -27,6 +33,6 @@ var Delete = app.Register(&app.Command[app.Empty, Data]{
 		if !term.Confirm("delete %s", repo.Path) {
 			return nil
 		}
-		return deleteRepo(ctx.Data.Store, repo)
+		return ctx.Data.DeleteAll(repo)
 	},
 })
