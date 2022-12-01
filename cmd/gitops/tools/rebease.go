@@ -8,8 +8,9 @@ import (
 )
 
 type RebaseFlags struct {
-	Remote string
-	Push   bool
+	Remote   string
+	Push     bool
+	Upstream bool
 }
 
 var Rebase = app.Register(&app.Command[RebaseFlags, app.Empty]{
@@ -17,13 +18,15 @@ var Rebase = app.Register(&app.Command[RebaseFlags, app.Empty]{
 	Desc: "Pull and rebase",
 
 	Prepare: func(cmd *cobra.Command, flags *RebaseFlags) {
-		cmd.Flags().StringVarP(&flags.Remote, "remote", "r", "origin", "remote name")
+		cmd.Flags().StringVarP(&flags.Remote, "remote", "r", "", "remote name")
 		cmd.RegisterFlagCompletionFunc("remote", app.Comp(app.CompGitRemote))
 
 		cmd.Flags().BoolVarP(&flags.Push, "push", "p", false, "push changes to remote")
 
 		cmd.Args = cobra.MaximumNArgs(1)
 		cmd.ValidArgsFunction = app.Comp(app.CompGitLocalBranch(false))
+
+		cmd.Flags().BoolVarP(&flags.Upstream, "upstream", "u", false, "use upstream")
 	},
 
 	Init: func(_ *app.Context[RebaseFlags, app.Empty]) error {
@@ -35,30 +38,13 @@ var Rebase = app.Register(&app.Command[RebaseFlags, app.Empty]{
 	},
 
 	Run: func(ctx *app.Context[RebaseFlags, app.Empty]) error {
-		target := ctx.Arg(0)
-		if target == "" {
-			mainBranch, err := git.GetMainBranch(ctx.Flags.Remote, git.Default)
-			if err != nil {
-				return err
-			}
-			target = mainBranch
-			term.Print("use target green|%s|", target)
+		branch := ctx.Arg(0)
+		target, _, err := getTarget(branch, ctx.Flags.Remote, ctx.Flags.Upstream)
+		if err != nil {
+			return err
 		}
 
-		err := git.Pull(git.Default)
-		if err != nil {
-			return err
-		}
-		err = git.Checkout(target, false, git.Default)
-		if err != nil {
-			return err
-		}
 		err = git.Pull(git.Default)
-		if err != nil {
-			return err
-		}
-
-		err = git.Checkout("-", false, git.Default)
 		if err != nil {
 			return err
 		}
