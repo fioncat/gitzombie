@@ -29,9 +29,10 @@ var DefaultBuilder = func() *Builder {
 }()
 
 type Builder struct {
-	Create []*Job       `yaml:"create" validate:"dive"`
-	Files  []*BuildFile `yaml:"files" validate:"unique=Name,dive"`
-	Init   []*Job       `yaml:"init" validate:"dive"`
+	Create    []*Job       `yaml:"create" validate:"dive"`
+	Templates []string     `yaml:"templates"`
+	Files     []*BuildFile `yaml:"files" validate:"unique=Name,dive"`
+	Init      []*Job       `yaml:"init" validate:"dive"`
 
 	repo *Repository
 	env  osutil.Env
@@ -100,6 +101,14 @@ func (b *Builder) Execute() error {
 	}
 	if !exists {
 		return errors.New("repo is still not exists after creating, please check your builder")
+	}
+
+	for _, template := range b.Templates {
+		term.PrintOperation("Applying template %q", template)
+		err = UseTemplate(template, b.repo.Path)
+		if err != nil {
+			return errors.Trace(err, "apply template %q", template)
+		}
 	}
 
 	for _, file := range b.Files {

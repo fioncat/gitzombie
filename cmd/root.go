@@ -21,6 +21,7 @@ import (
 	_ "github.com/fioncat/gitzombie/cmd/gitops/tag"
 	_ "github.com/fioncat/gitzombie/cmd/gitops/tools"
 	_ "github.com/fioncat/gitzombie/cmd/local/play"
+	_ "github.com/fioncat/gitzombie/cmd/local/template"
 	_ "github.com/fioncat/gitzombie/cmd/repo"
 	_ "github.com/fioncat/gitzombie/cmd/run"
 )

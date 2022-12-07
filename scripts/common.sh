@@ -4,13 +4,14 @@ __gz_home() {
 		cd $ret_path
 		return
 	fi
+	echo $ret_path
 	return $?
 }
 
 gz() {
 	action=$1
 	case "${action}" in
-		home|play|jump)
+		home|play|jump|template)
 			__gz_home $@
 			;;
 
