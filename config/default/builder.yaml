@@ -2,14 +2,15 @@ create:
   - name: "Create repo"
     run: mkdir -p ${REPO_BASE}
 
-files:
-  - name: "README.md"
-    content: |
-      # ${REPO_BASE}
-
-      ${REPO_NAME} created by gitzombie.
-  - name: ".gitignore"
-    content: ""
+# You can define files to create here
+# files:
+#   - name: "README.md"
+#     content: |
+#       # ${REPO_BASE}
+#
+#       ${REPO_NAME} created by gitzombie.
+#   - name: ".gitignore"
+#     content: ""
 
 init:
   - name: "Init git"

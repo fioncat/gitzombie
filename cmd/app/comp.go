@@ -146,3 +146,14 @@ func CompGroup(args []string) (*CompResult, error) {
 		Flag:  CompNoSpaceFlag,
 	}, nil
 }
+
+func CompTemplate(_ []string) (*CompResult, error) {
+	names, err := core.ListTemplates()
+	if err != nil {
+		return nil, err
+	}
+
+	return &CompResult{
+		Items: names,
+	}, nil
+}

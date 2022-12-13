@@ -206,7 +206,7 @@ func (p *Provider) wrapResp(name string, resp *gitlab.Response, err error) error
 }
 
 func (p *Provider) notFound(name string) error {
-	return fmt.Errorf("cannot find %q in Github", name)
+	return fmt.Errorf("cannot find %q in Gitlab", name)
 }
 
 func (p *Provider) convertRepo(prj *gitlab.Project) (*api.Repository, error) {

@@ -10,7 +10,8 @@ import (
 )
 
 type CreateFlags struct {
-	Builder string
+	Builder  string
+	Template []string
 }
 
 var Create = app.Register(&app.Command[CreateFlags, app.Empty]{
@@ -21,6 +22,10 @@ var Create = app.Register(&app.Command[CreateFlags, app.Empty]{
 	Prepare: func(cmd *cobra.Command, flags *CreateFlags) {
 		cmd.Flags().StringVarP(&flags.Builder, "builder", "b", "", "builder name")
 		cmd.RegisterFlagCompletionFunc("builder", app.Comp(app.CompBuilder))
+
+		cmd.Flags().StringSliceVarP(&flags.Template, "template", "t", nil, "template to use")
+		cmd.RegisterFlagCompletionFunc("template", app.Comp(app.CompTemplate))
+
 		cmd.Args = cobra.ExactArgs(1)
 		cmd.ValidArgsFunction = app.Comp(compGroup)
 	},
@@ -34,6 +39,11 @@ var Create = app.Register(&app.Command[CreateFlags, app.Empty]{
 				return err
 			}
 		}
+
+		if len(ctx.Flags.Template) > 0 {
+			builder.Templates = append(builder.Templates, ctx.Flags.Template...)
+		}
+
 		rootDir := config.Get().Playground
 		repo, err := core.NewLocalRepository(rootDir, ctx.Arg(0))
 		if err != nil {
