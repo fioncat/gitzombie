@@ -206,8 +206,8 @@ func mergeShowInfo(repo *core.Repository, opts *api.MergeOption) {
 		src = fmt.Sprintf("green|%s|", opts.SourceBranch)
 		tar = fmt.Sprintf("green|%s|", opts.TargetBranch)
 	} else {
-		src = fmt.Sprintf("magenta|%s|:greeen|%s|", repo.Name, opts.SourceBranch)
-		tar = fmt.Sprintf("magenta|%s|:greeen|%s|", opts.Upstream.Name, opts.TargetBranch)
+		src = fmt.Sprintf("magenta|%s|:green|%s|", repo.Name, opts.SourceBranch)
+		tar = fmt.Sprintf("magenta|%s|:green|%s|", opts.Upstream.Name, opts.TargetBranch)
 	}
 	term.Print(" * Title:  green|%s|", opts.Title)
 	term.Print(" * Body:   %s", lineDesc)
