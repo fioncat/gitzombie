@@ -4,7 +4,9 @@ __gz_home() {
 		cd $ret_path
 		return
 	fi
-	echo $ret_path
+	if [[ ! -z $ret_path ]]; then
+		echo $ret_path
+	fi
 	return $?
 }
 
