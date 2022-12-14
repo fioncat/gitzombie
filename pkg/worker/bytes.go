@@ -151,7 +151,7 @@ func (t *BytesTracker) render() bool {
 		var line string
 		if task.done {
 			if task.fail {
-				line = fmt.Sprintf("%s red|failed|\n", task.Name)
+				line = fmt.Sprintf("%s %s\n", task.Name, term.Style("failed", "red"))
 			} else {
 				line = fmt.Sprintf("%s done\n", task.Name)
 			}
@@ -168,8 +168,7 @@ func (t *BytesTracker) render() bool {
 		out.WriteString(line)
 	}
 
-	lines := term.Color(out.String())
-	fmt.Fprint(os.Stderr, lines)
+	fmt.Fprint(os.Stderr, out.String())
 	return done
 }
 
@@ -242,7 +241,7 @@ func (t *BytesBarTracker) initTask(task *Task[BytesTask]) {
 			decor.Any(func(s decor.Statistics) string {
 				if s.Completed {
 					if task.fail {
-						return term.Color("red|failed|")
+						return term.Style("failed", "red")
 					}
 					return fmt.Sprintf("%s done", task.Value.totalStr)
 				}

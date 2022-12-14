@@ -46,16 +46,16 @@ var Describe = app.Register(&app.Command[app.Empty, core.RepositoryStorage]{
 
 		timeStr := time.Unix(repo.LastAccess, 0).Format("2006-01-02 15:04:05")
 
-		term.Print("Name:   green|%s|", repo.Name)
-		term.Print("Group:  green|%s|", repo.Group())
-		term.Print("Base:   green|%s|", repo.Base())
-		term.Print("Remote: green|%s|", repo.Remote)
+		term.Printf("Name:   %s", term.Style(repo.Name, "green"))
+		term.Printf("Group:  %s", term.Style(repo.Group(), "green"))
+		term.Printf("Base:   %s", term.Style(repo.Base(), "green"))
+		term.Printf("Remote: %s", term.Style(repo.Remote, "green"))
 
-		term.Print("")
-		term.Print("Access:")
-		term.Print("* Count: green|%d|", repo.Access)
-		term.Print("* Last:  green|%s|", timeStr)
-		term.Print("* Score: green|%d|", repo.Score())
+		term.Println()
+		term.Println("Access:")
+		term.Printf("* Count: %s", term.Style(repo.Access, "green"))
+		term.Printf("* Last:  %s", term.Style(timeStr, "green"))
+		term.Printf("* Score: %s", term.Style(repo.Score(), "green"))
 		return nil
 	},
 })

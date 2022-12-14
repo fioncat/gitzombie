@@ -109,7 +109,7 @@ func TestValidate(t *testing.T) {
 			t.Fatalf("expected error, found nil: %+v", val)
 		}
 		if err != nil {
-			term.Print("==> blue|validate error output|")
+			term.Println("==> validate error output")
 			term.PrintError(err)
 		}
 	}

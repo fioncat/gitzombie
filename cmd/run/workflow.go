@@ -52,7 +52,7 @@ var Workflow = app.Register(&app.Command[WorkflowFlags, app.Empty]{
 		}
 
 		if wf.Select == nil {
-			term.Print("nothing to do")
+			term.Println("nothing to do")
 			return nil
 		}
 
@@ -61,7 +61,7 @@ var Workflow = app.Register(&app.Command[WorkflowFlags, app.Empty]{
 			return err
 		}
 		if len(items) == 0 {
-			term.Print("no repo selected")
+			term.Println("no repo selected")
 			return nil
 		}
 		if ctx.Flags.Edit {

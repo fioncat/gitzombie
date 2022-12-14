@@ -60,7 +60,7 @@ var Import = app.Register(&app.Command[ImportFlags, core.RepositoryStorage]{
 			}
 		}
 		if len(apiRepos) == 0 {
-			term.Print("no repo to import")
+			term.Println("no repo to import")
 			return nil
 		}
 		apiRepos, err = term.EditItems(config.Get().Editor, apiRepos,
@@ -76,9 +76,9 @@ var Import = app.Register(&app.Command[ImportFlags, core.RepositoryStorage]{
 		}
 		if len(tasks) == 0 {
 			if len(apiRepos) <= 1 {
-				term.Print("nothing to do, repo is already exists")
+				term.Println("nothing to do, repo is already exists")
 			} else {
-				term.Print("nothing to do, all repos are already exists")
+				term.Println("nothing to do, all repos are already exists")
 			}
 			return nil
 		}

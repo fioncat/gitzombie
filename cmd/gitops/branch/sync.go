@@ -58,15 +58,15 @@ var Sync = app.Register(&app.Command[SyncFlags, SyncData]{
 		}
 		ctx.Data.Branches = branches
 
-		branchWord := english.PluralWord(len(branches), "branch", "")
-		term.Print("found magenta|%d| %s", len(branches), branchWord)
+		branchWord := english.Plural(len(branches), "branch", "branches")
+		term.Println("found", term.Style(branchWord, "magenta"))
 
 		mainBranch, err := git.GetDefaultBranch(ctx.Flags.Remote, git.Default)
 		if err != nil {
 			return err
 		}
 		ctx.Data.MainBranch = mainBranch
-		term.Print("main branch is magenta|%s|", mainBranch)
+		term.Println("main branch is", term.Style(mainBranch, "magenta"))
 
 		ctx.Data.BackupBranch = mainBranch
 		err = syncCreateTasks(ctx)
@@ -79,21 +79,22 @@ var Sync = app.Register(&app.Command[SyncFlags, SyncData]{
 				return err
 			}
 		}
-		term.Print("backup branch is magenta|%s|", ctx.Data.BackupBranch)
-		term.Print("")
+		back := ctx.Data.BackupBranch
+		term.Println("backup branch is", term.Style(back, "magenta"))
+		term.Println()
 		return nil
 	},
 
 	Run: func(ctx *app.Context[SyncFlags, SyncData]) error {
 		if len(ctx.Data.Tasks) == 0 {
-			term.Print("nothing to do")
+			term.Println("nothing to do")
 			return nil
 		}
 
 		taskWord := english.Plural(len(ctx.Data.Tasks), "task", "")
-		term.Print("we have %s to run:", taskWord)
+		term.Printf("we have %s to run:", taskWord)
 		for _, task := range ctx.Data.Tasks {
-			term.Print(task.desc)
+			term.Println(task.desc)
 		}
 		term.ConfirmExit("continue")
 
@@ -130,12 +131,12 @@ func syncCreateTasks(ctx *app.Context[SyncFlags, SyncData]) error {
 		switch branch.RemoteStatus {
 		case git.RemoteStatusAhead:
 			tar = branch.Name
-			desc = "green|push|  "
+			desc = term.Style("push", "green")
 			cmd = []string{"push"}
 
 		case git.RemoteStatusBehind:
 			tar = branch.Name
-			desc = "green|pull|  "
+			desc = term.Style("pull", "green")
 			cmd = []string{"pull"}
 
 		case git.RemoteStatusGone:
@@ -146,7 +147,7 @@ func syncCreateTasks(ctx *app.Context[SyncFlags, SyncData]) error {
 				continue
 			}
 			tar = ctx.Data.MainBranch
-			desc = "red|delete|"
+			desc = term.Style("delete", "red")
 			cmd = []string{"branch", "-D", branch.Name}
 
 		default:

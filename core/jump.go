@@ -76,8 +76,8 @@ func (err *parseJumpKeywordStorageError) Error() string {
 }
 
 func (err *parseJumpKeywordStorageError) Extra() {
-	term.Print("")
-	term.Print("yellow|The repository data is broken, please fix or delete it: %s|", err.path)
+	term.Println()
+	term.Printf("The repository data is broken, please fix or delete it: %s", err.path)
 }
 
 func (s *JumpKeywordStorage) init() error {

@@ -109,7 +109,7 @@ var Clean = app.Register(&app.Command[CleanFlags, CleanData]{
 	Run: func(ctx *app.Context[CleanFlags, CleanData]) error {
 		items := ctx.Data.Items
 		if len(items) == 0 {
-			term.Print("nothing to do")
+			term.Println("nothing to do")
 			return nil
 		}
 		var err error
@@ -159,16 +159,16 @@ func showCleanItems(items []*CleanItem) {
 
 	nameFmt := "%-" + strconv.Itoa(nameLen) + "s"
 	itemWord := english.Plural(len(items), "repo", "repos")
-	term.Print("%s to delete:", itemWord)
+	term.Printf("%s to delete:", itemWord)
 	for _, item := range items {
 		name := fmt.Sprintf(nameFmt, item.Repo.FullName())
 		var view string
 		if item.Never {
-			view = "red|Never|"
+			view = term.Style("Never", "red")
 		} else {
 			daysWord := english.Plural(item.Days, "day", "days")
-			view = fmt.Sprintf("yellow|%s|", daysWord)
+			view = term.Style(daysWord, "yellow")
 		}
-		term.Print("* %s %s", name, view)
+		term.Printf("* %s %s", name, view)
 	}
 }

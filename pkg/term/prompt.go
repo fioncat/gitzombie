@@ -15,7 +15,7 @@ func Confirm(msg string, args ...any) bool {
 	if AlwaysYes {
 		return true
 	}
-	msg = Color(msg, args...)
+	msg = fmt.Sprintf(msg, args...)
 	msg = fmt.Sprintf("%s? (y/n) ", msg)
 	fmt.Fprint(os.Stderr, msg)
 	var input string
