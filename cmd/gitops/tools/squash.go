@@ -82,14 +82,14 @@ var Squash = app.Register(&app.Command[SquashFlags, SquashData]{
 	Run: func(ctx *app.Context[SquashFlags, SquashData]) error {
 		commits := ctx.Data.Commits
 		if len(commits) == 0 {
-			term.Print("nothing to do")
+			term.Println("nothing to do")
 			return nil
 		}
 
-		term.Print("")
-		term.Print("found green|%s| to squash:", ctx.Data.Word)
+		term.Println()
+		term.Printf("found %s to squash:", term.Style(ctx.Data.Word, "green"))
 		for _, commit := range commits {
-			term.Print("  * %s", commit)
+			term.Printf("  * %s", commit)
 		}
 		term.ConfirmExit("continue")
 

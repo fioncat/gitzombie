@@ -88,8 +88,8 @@ var Merge = app.Register(&app.Command[MergeFlags, core.RepositoryStorage]{
 		opts.Title = title
 		opts.Body = body
 
-		term.Print("")
-		term.Print("About to create merge:")
+		term.Println()
+		term.Println("About to create merge:")
 		mergeShowInfo(repo, opts)
 		term.ConfirmExit("continue")
 
@@ -192,25 +192,31 @@ func mergeEdit() (string, string, error) {
 func mergeShowInfo(repo *core.Repository, opts *api.MergeOption) {
 	var lineDesc string
 	if opts.Body == "" {
-		lineDesc = "yellow|empty|"
+		lineDesc = term.Style("empty", "yellow")
 	} else {
 		lineCount := len(strings.Split(opts.Body, "\n"))
 		countWord := english.Plural(lineCount, "line", "")
-		lineDesc = fmt.Sprintf("green|%s|", countWord)
+		lineDesc = term.Style(countWord, "green")
 	}
 	var (
 		src string
 		tar string
 	)
 	if opts.Upstream == nil {
-		src = fmt.Sprintf("green|%s|", opts.SourceBranch)
-		tar = fmt.Sprintf("green|%s|", opts.TargetBranch)
+		src = term.Style(opts.SourceBranch, "green")
+		tar = term.Style(opts.TargetBranch, "green")
 	} else {
-		src = fmt.Sprintf("magenta|%s|:green|%s|", repo.Name, opts.SourceBranch)
-		tar = fmt.Sprintf("magenta|%s|:green|%s|", opts.Upstream.Name, opts.TargetBranch)
+		srcRepo := term.Style(repo.Name, "magenta")
+		tarRepo := term.Style(opts.Upstream.Name, "magenta")
+
+		srcBranch := term.Style(opts.SourceBranch, "green")
+		tarBranch := term.Style(opts.TargetBranch, "green")
+
+		src = fmt.Sprintf("%s:%s", srcRepo, srcBranch)
+		tar = fmt.Sprintf("%s:%s", tarRepo, tarBranch)
 	}
-	term.Print(" * Title:  green|%s|", opts.Title)
-	term.Print(" * Body:   %s", lineDesc)
-	term.Print(" * Source: %s", src)
-	term.Print(" * Target: %s", tar)
+	term.Printf(" * Title:  %s", term.Style(opts.Title, "green"))
+	term.Printf(" * Body:   %s", lineDesc)
+	term.Printf(" * Source: %s", src)
+	term.Printf(" * Target: %s", tar)
 }

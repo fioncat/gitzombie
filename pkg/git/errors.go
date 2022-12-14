@@ -30,7 +30,7 @@ func (e *ExecError) Out() string {
 
 func (e *ExecError) Extra() {
 	if e.Stderr != "" {
-		term.Print(e.Stderr)
+		term.Println(e.Stderr)
 	}
 }
 

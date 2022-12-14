@@ -507,8 +507,8 @@ func (err *parseRepositoryStorageError) Error() string {
 }
 
 func (err *parseRepositoryStorageError) Extra() {
-	term.Print("")
-	term.Print("yellow|The repository data is broken, please fix or delete it: %s|", err.path)
+	term.Println()
+	term.Printf("The repository data is broken, please fix or delete it: %s", err.path)
 }
 
 func ConvertToGroups(repos []*Repository) []string {

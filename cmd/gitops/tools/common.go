@@ -34,7 +34,7 @@ func getTarget(branch, remote string, upstream bool) (string, string, error) {
 		if err != nil {
 			return "", "", err
 		}
-		term.Print("use default branch green|%s|", mainBranch)
+		term.Println("use default branch", term.Style(mainBranch, "green"))
 		branch = mainBranch
 	}
 

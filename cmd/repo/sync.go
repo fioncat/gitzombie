@@ -111,7 +111,7 @@ func syncStorage(ctx *app.Context[SyncFlags, SyncData]) error {
 	repoWord := english.Plural(len(tasks), "repo", "repos")
 	ok := term.Confirm("do you want to clone %s", repoWord)
 	if !ok {
-		term.Print("skip cloning")
+		term.Println("skip cloning")
 		return nil
 	}
 

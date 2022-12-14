@@ -96,7 +96,7 @@ func (err *Error) Error() string {
 
 func (err *Error) Extra() {
 	for _, f := range err.Fields {
-		term.Print(f.String())
+		term.Println(f.String())
 	}
 }
 

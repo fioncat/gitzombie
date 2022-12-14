@@ -89,19 +89,22 @@ func (t *jobTracker[T]) render() {
 		doneStr := fmt.Sprintf(t.doneFmt, t.done)
 		var line string
 		if task.fail {
-			line = fmt.Sprintf("red|(%s/%d) %s failed|\n", doneStr, t.total, task.Name)
+			line = fmt.Sprintf("(%s/%d) %s failed\n", doneStr, t.total, task.Name)
+			line = term.Style(line, "red")
 		} else {
-			line = fmt.Sprintf("bold|(%s/%d)| %s done\n", doneStr, t.total, task.Name)
+			head := fmt.Sprintf("(%s/%d)", doneStr, t.total)
+			head = term.Style(head, "bold")
+			line = fmt.Sprintf("%s %s done\n", head, task.Name)
 		}
 		out.WriteString(line)
 	}
 
+	verbHead := term.Style(t.verb, "yellow")
 	for _, task := range running {
-		line := fmt.Sprintf("yellow|%s| %s\n", t.verb, task.Name)
+		line := fmt.Sprintf("%s %s\n", verbHead, task.Name)
 		out.WriteString(line)
 	}
-	lines := term.Color(out.String())
-	fmt.Fprint(os.Stderr, lines)
+	fmt.Fprint(os.Stderr, out.String())
 }
 
 func (t *jobTracker[T]) Add(task *Task[T]) {

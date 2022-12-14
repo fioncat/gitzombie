@@ -122,7 +122,7 @@ func (w *Worker[T]) handleErrors(errs []*taskError[T]) error {
 		return errors.Trace(err, "write log file")
 	}
 	errWord := english.Plural(len(errs), "error", "")
-	term.Print("")
-	term.Print("write red|%s log| to %s", errWord, logPath)
+	term.Println()
+	term.Printf("write %s log to %s", term.Style(errWord, "red"), logPath)
 	return fmt.Errorf("%s failed with %s", w.Name, errWord)
 }

@@ -3,73 +3,66 @@ package term
 import (
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/fioncat/gitzombie/pkg/errors"
 )
 
-// colorPlaceholder is the color placeholder "color|**|" regex object.
-var colorPlaceholder = regexp.MustCompile(`(cyan|blue|red|yellow|magenta|green|bold)\|[^\|]+\|`)
-
-func Color(s string, args ...any) string {
-	msg := fmt.Sprintf(s, args...)
-	return colorString(msg)
-}
-
-func colorString(s string) string {
-	return colorPlaceholder.ReplaceAllStringFunc(s, func(ph string) string {
-		tmp := strings.Split(ph, "|")
-		if len(tmp) <= 1 {
-			return ph
-		}
-		colorType := tmp[0]
-		content := tmp[1]
-
-		switch colorType {
-		case "cyan":
-			return color.CyanString(content)
-
-		case "blue":
-			return color.BlueString(content)
-
+func Style(a any, style string) string {
+	styleAttrStrs := strings.Split(style, ",")
+	attrs := make([]color.Attribute, len(styleAttrStrs))
+	for i, styleAttrStr := range styleAttrStrs {
+		var attr color.Attribute
+		switch styleAttrStr {
 		case "red":
-			return color.RedString(content)
-
-		case "yellow":
-			return color.YellowString(content)
-
-		case "magenta":
-			return color.MagentaString(content)
+			attr = color.FgRed
 
 		case "green":
-			return color.GreenString(content)
+			attr = color.FgGreen
+
+		case "magenta":
+			attr = color.FgMagenta
+
+		case "yellow":
+			attr = color.FgYellow
 
 		case "bold":
-			c := color.New(color.Bold)
-			return c.Sprint(content)
+			attr = color.Bold
+
+		case "blue":
+			attr = color.FgBlue
+
+		default:
+			panic("unknown style attr " + styleAttrStr)
 		}
-		return ph
-	})
+		attrs[i] = attr
+	}
+	c := color.New(attrs...)
+	return c.Sprint(a)
 }
 
-// Print prints message to stderr. The color placeholder "color|**|"
-// will be expanded.
-func Print(msg string, args ...any) {
+func Printf(msg string, args ...any) {
 	msg = fmt.Sprintf(msg, args...)
-	fmt.Fprintln(os.Stderr, colorString(msg))
+	fmt.Fprintln(os.Stderr, msg)
+}
+
+func Println(args ...any) {
+	fields := make([]string, len(args))
+	for i, arg := range args {
+		fields[i] = fmt.Sprint(arg)
+	}
+	msg := strings.Join(fields, " ")
+	fmt.Fprintln(os.Stderr, msg)
 }
 
 func Warn(msg string, args ...any) {
 	msg = fmt.Sprintf(msg, args...)
-	msg = fmt.Sprintf("yellow|WARN: %s|", msg)
-	Print(msg)
+	Println(Style("WARN:", "yellow,bold"), msg)
 }
 
 func PrintError(err error) {
-	msg := fmt.Sprintf("red|error:| %v", err)
-	Print(msg)
+	Println(Style("error:", "red,bold"), err)
 	if ext, ok := err.(errors.Extra); ok {
 		ext.Extra()
 	}
@@ -77,10 +70,10 @@ func PrintError(err error) {
 
 func PrintOperation(msg string, args ...any) {
 	msg = fmt.Sprintf(msg, args...)
-	Print("yellow|::| bold|%s|", msg)
+	Println(Style("==>", "blue"), Style(msg, "bold"))
 }
 
 func PrintCmd(cmd string, args ...any) {
 	cmd = fmt.Sprintf(cmd, args...)
-	Print("yellow|~| bold|%s|", cmd)
+	Println(Style("==>", "green"), Style(cmd, "bold"))
 }
