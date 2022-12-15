@@ -58,7 +58,7 @@ var Encrypt = app.Register(&app.Command[FileFlags, app.Empty]{
 			return osutil.WriteFile(outPath, []byte(encrypted))
 		}
 
-		fmt.Println(encrypted)
+		fmt.Print(encrypted)
 		return nil
 	},
 })
@@ -98,7 +98,7 @@ var Decrypt = app.Register(&app.Command[FileFlags, app.Empty]{
 			return osutil.WriteFile(outPath, raw)
 		}
 
-		fmt.Println(string(raw))
+		fmt.Print(string(raw))
 		return nil
 	},
 })
