@@ -28,7 +28,7 @@ func TestCrypto(t *testing.T) {
 		},
 	}
 	for _, testCase := range testCases {
-		encrypted, salt, err := Encrypt(testCase.password, testCase.value)
+		encrypted, salt, err := Encrypt(testCase.password, []byte(testCase.value), false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -37,7 +37,7 @@ func TestCrypto(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if raw != testCase.value {
+		if string(raw) != testCase.value {
 			t.Fatalf("incorrect decrypt result: %q, expect %q", raw, testCase.value)
 		}
 
