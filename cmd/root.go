@@ -15,16 +15,18 @@ import (
 	_ "github.com/fioncat/gitzombie/api/github"
 	_ "github.com/fioncat/gitzombie/api/gitlab"
 
-	_ "github.com/fioncat/gitzombie/cmd/delete"
-	_ "github.com/fioncat/gitzombie/cmd/edit"
+	_ "github.com/fioncat/gitzombie/cmd/builder"
+	_ "github.com/fioncat/gitzombie/cmd/config"
 	_ "github.com/fioncat/gitzombie/cmd/gitops/branch"
 	_ "github.com/fioncat/gitzombie/cmd/gitops/tag"
 	_ "github.com/fioncat/gitzombie/cmd/gitops/tools"
-	_ "github.com/fioncat/gitzombie/cmd/local/play"
-	_ "github.com/fioncat/gitzombie/cmd/local/template"
+	_ "github.com/fioncat/gitzombie/cmd/job"
+	_ "github.com/fioncat/gitzombie/cmd/play"
+	_ "github.com/fioncat/gitzombie/cmd/remote"
 	_ "github.com/fioncat/gitzombie/cmd/repo"
-	_ "github.com/fioncat/gitzombie/cmd/run"
 	_ "github.com/fioncat/gitzombie/cmd/secret"
+	_ "github.com/fioncat/gitzombie/cmd/template"
+	_ "github.com/fioncat/gitzombie/cmd/workflow"
 )
 
 var Root = &cobra.Command{

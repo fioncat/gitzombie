@@ -1,4 +1,4 @@
-package edit
+package config
 
 import (
 	"github.com/fioncat/gitzombie/cmd/app"
@@ -14,7 +14,7 @@ var Config = app.Register(&app.Command[app.Empty, app.Empty]{
 
 	RunNoContext: func() error {
 		path := config.GetDir("config.toml")
-		return Do(path, config.DefaultConfig, "config.toml", func(s string) error {
+		return app.Edit(path, config.DefaultConfig, "config.toml", func(s string) error {
 			data := []byte(s)
 			var cfg config.Config
 			err := toml.Unmarshal(data, &cfg)

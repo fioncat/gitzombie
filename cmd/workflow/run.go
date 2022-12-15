@@ -1,4 +1,4 @@
-package run
+package workflow
 
 import (
 	"os"
@@ -23,9 +23,8 @@ type WorkflowFlags struct {
 }
 
 var Workflow = app.Register(&app.Command[WorkflowFlags, app.Empty]{
-	Use:    "workflow [-y] [-c] {workflow}",
-	Desc:   "Run workflow",
-	Action: "Run",
+	Use:  "run [-y] [-c] {workflow}",
+	Desc: "Run workflow",
 
 	Prepare: func(cmd *cobra.Command, flags *WorkflowFlags) {
 		cmd.Flags().BoolVarP(&flags.Current, "current", "c", false, "run workflow on current repo")

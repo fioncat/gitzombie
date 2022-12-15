@@ -1,6 +1,7 @@
-package edit
+package app
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/fioncat/gitzombie/config"
@@ -9,7 +10,19 @@ import (
 	"github.com/fioncat/gitzombie/pkg/term"
 )
 
-func Do(path, defaultContent, name string, validate func(s string) error) error {
+func Delete(name, path string) error {
+	exists, err := osutil.FileExists(path)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("cannot find %s", name)
+	}
+	term.ConfirmExit("Do you want to delete %s", path)
+	return os.Remove(path)
+}
+
+func Edit(path, defaultContent, name string, validate func(s string) error) error {
 	var content string
 	_, err := os.Stat(path)
 	switch {
@@ -17,7 +30,8 @@ func Do(path, defaultContent, name string, validate func(s string) error) error 
 		content = defaultContent
 
 	case err == nil:
-		data, err := os.ReadFile(path)
+		var data []byte
+		data, err = os.ReadFile(path)
 		if err != nil {
 			return err
 		}

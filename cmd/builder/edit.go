@@ -1,4 +1,4 @@
-package edit
+package builder
 
 import (
 	"fmt"
@@ -7,32 +7,31 @@ import (
 	"github.com/fioncat/gitzombie/config"
 	"github.com/fioncat/gitzombie/core"
 	"github.com/fioncat/gitzombie/pkg/errors"
-	"github.com/fioncat/gitzombie/pkg/validate"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
 
-var Workflow = app.Register(&app.Command[app.Empty, app.Empty]{
-	Use:    "workflow {workflow}",
-	Desc:   "Edit workflow file",
+var Edit = app.Register(&app.Command[app.Empty, app.Empty]{
+	Use:    "builder {builder}",
+	Desc:   "Edit builder file",
 	Action: "Edit",
 
 	PrepareNoFlag: func(cmd *cobra.Command) {
 		cmd.Args = cobra.ExactArgs(1)
-		cmd.ValidArgsFunction = app.Comp(app.CompWorkflow)
+		cmd.ValidArgsFunction = app.Comp(app.CompBuilder)
 	},
 
 	Run: func(ctx *app.Context[app.Empty, app.Empty]) error {
 		name := fmt.Sprintf("%s.yaml", ctx.Arg(0))
-		path := config.GetDir("workflows", name)
-		return Do(path, config.DefaultWorkflow, name, func(s string) error {
+		path := config.GetDir("builders", name)
+		return app.Edit(path, config.DefaultBuilder, name, func(s string) error {
 			data := []byte(s)
-			var wf core.Workflow
-			err := yaml.Unmarshal(data, &wf)
+			var builder core.Builder
+			err := yaml.Unmarshal(data, &builder)
 			if err != nil {
 				return errors.Trace(err, "parse yaml")
 			}
-			return validate.Do(&wf)
+			return builder.Validate()
 		})
 	},
 })
