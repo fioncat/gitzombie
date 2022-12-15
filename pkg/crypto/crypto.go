@@ -33,18 +33,23 @@ func initGCM(key []byte) (cipher.AEAD, error) {
 }
 
 func encodePassword(password, salt string) []byte {
-	password += salt
+	if salt != "" {
+		password += salt
+	}
 
 	sum := sha256.Sum256([]byte(password))
 	return sum[:32]
 }
 
-func Encrypt(password, value string) (string, string, error) {
+func Encrypt(password string, data []byte, noSalt bool) (string, string, error) {
 	if password == "" {
 		return "", "", ErrPasswordEmpty
 	}
 
-	salt := genSalt()
+	var salt string
+	if !noSalt {
+		salt = genSalt()
+	}
 	key := encodePassword(password, salt)
 
 	gcm, err := initGCM(key)
@@ -61,40 +66,40 @@ func Encrypt(password, value string) (string, string, error) {
 		return "", "", errors.Trace(err, "generate random sequence")
 	}
 
-	result := gcm.Seal(nonce, nonce, []byte(value), nil)
+	result := gcm.Seal(nonce, nonce, data, nil)
 	return hex.EncodeToString(result), salt, nil
 }
 
-func Decrypt(password, salt, value string) (string, error) {
+func Decrypt(password, salt, value string) ([]byte, error) {
 	if password == "" {
-		return "", ErrPasswordEmpty
+		return nil, ErrPasswordEmpty
 	}
 
 	key := encodePassword(password, salt)
 
 	gcm, err := initGCM(key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	data, err := hex.DecodeString(value)
 	if err != nil {
-		return "", errors.New("value is not a hex string")
+		return nil, errors.New("value is not a hex string")
 	}
 
 	nonceSize := gcm.NonceSize()
 	if len(data) < nonceSize {
-		return "", errors.New("value is bad format")
+		return nil, errors.New("value is bad format")
 	}
 
 	var nonce []byte
 	nonce, data = data[:nonceSize], data[nonceSize:]
 	result, err := gcm.Open(nil, nonce, data, nil)
 	if err != nil {
-		return "", ErrIncorrectPassword
+		return nil, ErrIncorrectPassword
 	}
 
-	return string(result), nil
+	return result, nil
 }
 
 var (

@@ -24,6 +24,7 @@ import (
 	_ "github.com/fioncat/gitzombie/cmd/local/template"
 	_ "github.com/fioncat/gitzombie/cmd/repo"
 	_ "github.com/fioncat/gitzombie/cmd/run"
+	_ "github.com/fioncat/gitzombie/cmd/secret"
 )
 
 var Root = &cobra.Command{

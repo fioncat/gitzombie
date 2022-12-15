@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
@@ -46,6 +47,8 @@ func GetProvider(remote *core.Remote) (Provider, error) {
 			return nil, errors.Trace(err, "get secret token")
 		}
 		remote.Token = token
+	} else {
+		remote.Token = os.ExpandEnv(remote.Token)
 	}
 
 	var err error

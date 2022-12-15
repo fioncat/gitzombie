@@ -64,14 +64,16 @@ func FileExists(dir string) (bool, error) {
 }
 
 func WriteFile(path string, data []byte) error {
+	var err error
 	if !filepath.IsAbs(path) {
-		// The caller should make sure that path is abs, here we
-		// make a double-check.
-		return fmt.Errorf("failed to write to %s: path is not abs", path)
+		path, err = filepath.Abs(path)
+		if err != nil {
+			return fmt.Errorf("failed to convert abs path: %v", err)
+		}
 	}
 	dir := filepath.Dir(path)
 	// Make sure that the dir of file is created
-	err := EnsureDir(dir)
+	err = EnsureDir(dir)
 	if err != nil {
 		return err
 	}

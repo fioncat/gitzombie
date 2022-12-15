@@ -1,6 +1,7 @@
 package term
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -59,6 +60,23 @@ func InputPassword(msg string, args ...any) (string, error) {
 	}
 	Println()
 	return string(bytesPassword), nil
+}
+
+func InputNewPassword(msg string, args ...any) (string, error) {
+	password, err := InputPassword(msg, args...)
+	if err != nil {
+		return "", err
+	}
+
+	rePassword, err := InputPassword("Please confirm password")
+	if err != nil {
+		return "", err
+	}
+
+	if password != rePassword {
+		return "", errors.New("the two passwords you entered were inconsistent")
+	}
+	return password, nil
 }
 
 func InputErase(msg string, args ...any) string {

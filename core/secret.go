@@ -64,23 +64,13 @@ func SetSecret(key string) (string, error) {
 		return "", err
 	}
 
-	password, err := term.InputPassword("Please intput new password for %s", key)
+	password, err := term.InputNewPassword("Please intput new password for %s", key)
 	if err != nil {
 		return "", err
 	}
-
-	rePassword, err := term.InputPassword("Please confirm password")
-	if err != nil {
-		return "", err
-	}
-
-	if password != rePassword {
-		return "", errors.New("the two passwords you entered were inconsistent")
-	}
-
 	value := term.InputErase("Please input %s", key)
 
-	encrypted, salt, err := crypto.Encrypt(password, value)
+	encrypted, salt, err := crypto.Encrypt(password, []byte(value), false)
 	if err != nil {
 		return "", errors.Trace(err, "encrypt")
 	}
@@ -114,7 +104,11 @@ func GetSecret(key string, allowCreate bool) (string, error) {
 		return "", err
 	}
 
-	return crypto.Decrypt(password, s.Salt, s.Value)
+	data, err := crypto.Decrypt(password, s.Salt, s.Value)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 func DeleteSecret(key string) error {

@@ -1,4 +1,4 @@
-package delete
+package secret
 
 import (
 	"github.com/fioncat/gitzombie/cmd/app"
