@@ -26,7 +26,7 @@ type MergeFlags struct {
 
 var Merge = app.Register(&app.Command[MergeFlags, core.RepositoryStorage]{
 	Use:  "merge [-u] [-s source-branch] [-t target-branch]",
-	Desc: "Create or open MergeRequest (PR in Github)",
+	Desc: "Open or create PullRequest or MergeRequest",
 
 	Init: initData[MergeFlags],
 

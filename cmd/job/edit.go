@@ -1,4 +1,4 @@
-package edit
+package job
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Job = app.Register(&app.Command[app.Empty, app.Empty]{
+var Edit = app.Register(&app.Command[app.Empty, app.Empty]{
 	Use:    "job {job}",
 	Desc:   "Edit job file",
 	Action: "Edit",
@@ -21,6 +21,6 @@ var Job = app.Register(&app.Command[app.Empty, app.Empty]{
 	Run: func(ctx *app.Context[app.Empty, app.Empty]) error {
 		name := fmt.Sprintf("%s.sh", ctx.Arg(0))
 		path := config.GetDir("jobs", name)
-		return Do(path, "", name, nil)
+		return app.Edit(path, "", name, nil)
 	},
 })

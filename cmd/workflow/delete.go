@@ -1,4 +1,4 @@
-package delete
+package workflow
 
 import (
 	"github.com/fioncat/gitzombie/cmd/app"
@@ -6,19 +6,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Job = app.Register(&app.Command[app.Empty, app.Empty]{
-	Use:    "job {name}",
-	Desc:   "Delete a job",
+var Delete = app.Register(&app.Command[app.Empty, app.Empty]{
+	Use:    "workflow {name}",
+	Desc:   "Delete a workflow",
 	Action: "Delete",
 
 	PrepareNoFlag: func(cmd *cobra.Command) {
 		cmd.Args = cobra.ExactArgs(1)
-		cmd.ValidArgsFunction = app.Comp(app.CompJob)
+		cmd.ValidArgsFunction = app.Comp(app.CompWorkflow)
 	},
 
 	Run: func(ctx *app.Context[app.Empty, app.Empty]) error {
 		name := ctx.Arg(0)
-		path := config.GetDir("jobs", name+".sh")
-		return do(ctx.Arg(0), path)
+		path := config.GetDir("workflows", name+".yaml")
+		return app.Delete(ctx.Arg(0), path)
 	},
 })

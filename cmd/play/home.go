@@ -1,19 +1,17 @@
 package play
 
 import (
-	"os"
+	"fmt"
 
 	"github.com/fioncat/gitzombie/cmd/app"
-	"github.com/fioncat/gitzombie/cmd/local"
 	"github.com/fioncat/gitzombie/config"
-	"github.com/fioncat/gitzombie/pkg/term"
+	"github.com/fioncat/gitzombie/core"
 	"github.com/spf13/cobra"
 )
 
-var Delete = app.Register(&app.Command[app.Empty, app.Empty]{
-	Use:    "play {name}",
-	Desc:   "Delete a playground",
-	Action: "Delete",
+var Home = app.Register(&app.Command[app.Empty, app.Empty]{
+	Use:  "play [name]",
+	Desc: "Enter a playground",
 
 	PrepareNoFlag: func(cmd *cobra.Command) {
 		cmd.Args = cobra.MaximumNArgs(1)
@@ -22,11 +20,11 @@ var Delete = app.Register(&app.Command[app.Empty, app.Empty]{
 
 	Run: func(ctx *app.Context[app.Empty, app.Empty]) error {
 		rootDir := config.Get().Playground
-		repo, err := local.Select(rootDir, ctx.Arg(0))
+		repo, err := core.SelectLocalRepository(rootDir, ctx.Arg(0))
 		if err != nil {
 			return err
 		}
-		term.ConfirmExit("Do you want to remove %s", repo.Path)
-		return os.RemoveAll(repo.Path)
+		fmt.Println(repo.Path)
+		return nil
 	},
 })
