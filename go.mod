@@ -14,6 +14,7 @@ require (
 	github.com/vbauerster/mpb/v8 v8.1.4
 	github.com/xanzy/go-gitlab v0.74.0
 	golang.org/x/oauth2 v0.0.0-20220722155238-128564f6959c
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	gopkg.in/yaml.v3 v3.0.1
 )
 

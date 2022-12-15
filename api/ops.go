@@ -34,6 +34,20 @@ func GetProvider(remote *core.Remote) (Provider, error) {
 	if creator == nil {
 		return nil, fmt.Errorf("unknown provider %s", remote.Provider)
 	}
+
+	if remote.TokenSecret {
+		key := remote.Token
+		if key == "" {
+			key = fmt.Sprintf("%s_token", remote.Name)
+		}
+
+		token, err := core.GetSecret(key, true)
+		if err != nil {
+			return nil, errors.Trace(err, "get secret token")
+		}
+		remote.Token = token
+	}
+
 	var err error
 	p, err = creator(remote)
 	if err != nil {

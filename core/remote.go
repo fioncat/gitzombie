@@ -16,9 +16,10 @@ type Remote struct {
 	User  string `toml:"user" validate:"required"`
 	Email string `toml:"email" validate:"email"`
 
-	Provider string `toml:"provider" validate:"enum_provider"`
-	Token    string `toml:"token"`
-	API      string `toml:"api" validate:"omitempty,uri"`
+	Provider    string `toml:"provider" validate:"enum_provider"`
+	Token       string `toml:"token"`
+	TokenSecret bool   `toml:"token_secret"`
+	API         string `toml:"api" validate:"omitempty,uri"`
 
 	Groups []*RemoteGroup `toml:"groups" validate:"unique=Name,dive"`
 }
