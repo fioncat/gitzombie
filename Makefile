@@ -1,9 +1,17 @@
-COMMIT=$(shell git rev-parse HEAD)
+COMMIT_ID=$(shell git rev-parse HEAD)
+COMMIT_ID_SHORT=$(shell git rev-parse --short HEAD)
+
 TAG=$(shell git describe --tags --abbrev=0 2>/dev/null)
 
 DATE=$(shell date '+%FT%TZ')
 
-VERSION=$(if $(TAG),$(TAG),commit-$(COMMIT))
+# If current commit is tagged, use tag as version, else, use dev-${COMMIT_ID} as version
+VERSION=$(shell git tag --points-at ${COMMIT_ID})
+VERSION:=$(if $(VERSION),$(VERSION),dev-${COMMIT_ID_SHORT})
+
+.PHONY: version
+version:
+	@echo ${VERSION}
 
 .PHONY: fmt
 fmt:
@@ -11,11 +19,11 @@ fmt:
 
 .PHONY: install
 install:
-	@go install -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT)' -X 'main.BuildDate=$(DATE)'"
+	@go install -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT_ID)' -X 'main.BuildDate=$(DATE)'"
 
 .PHONY: build
 build:
-	@go build -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT)' -X 'main.BuildDate=$(DATE)'" -o bin/gitzombie
+	@go build -ldflags="-X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT_ID)' -X 'main.BuildDate=$(DATE)'" -o bin/gitzombie
 
 
 .PHONY: install-check
