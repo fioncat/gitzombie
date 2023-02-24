@@ -2,6 +2,9 @@ package repo
 
 import (
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 
@@ -24,6 +27,8 @@ type CleanFlags struct {
 type CleanData struct {
 	Items []*CleanItem
 	Store *core.RepositoryStorage
+
+	RepoPaths map[string]struct{}
 }
 
 type CleanItem struct {
@@ -66,6 +71,7 @@ var Clean = app.Register(&app.Command[CleanFlags, CleanData]{
 		}
 
 		var items []*CleanItem
+		repoPaths := make(map[string]struct{}, store.Count())
 		for _, remoteName := range remotes {
 			remote, err := core.GetRemote(remoteName)
 			if err != nil {
@@ -73,6 +79,7 @@ var Clean = app.Register(&app.Command[CleanFlags, CleanData]{
 			}
 			repos := store.List(remoteName)
 			for _, repo := range repos {
+				repoPaths[repo.Path] = struct{}{}
 				var deltaDays int = -1
 				if repo.LastAccess > 0 {
 					if ctx.Flags.Never {
@@ -100,37 +107,42 @@ var Clean = app.Register(&app.Command[CleanFlags, CleanData]{
 
 		ctx.OnClose(func() error { return store.Close() })
 		ctx.Data = &CleanData{
-			Items: items,
-			Store: store,
+			Items:     items,
+			Store:     store,
+			RepoPaths: repoPaths,
 		}
 		return nil
 	},
 
 	Run: func(ctx *app.Context[CleanFlags, CleanData]) error {
 		items := ctx.Data.Items
-		if len(items) == 0 {
-			term.Println("nothing to do")
+		var err error
+		if len(items) > 0 {
+			if ctx.Flags.Edit {
+				items, err = term.EditItems(config.Get().Editor,
+					items, func(item *CleanItem) string {
+						return item.Repo.FullName()
+					})
+				if err != nil {
+					return err
+				}
+			}
+
+			showCleanItems(items)
+			term.ConfirmExit("continue")
+
+			for _, item := range items {
+				err := ctx.Data.Store.DeleteAll(item.Repo)
+				if err != nil {
+					return err
+				}
+			}
 			return nil
 		}
-		var err error
-		if ctx.Flags.Edit {
-			items, err = term.EditItems(config.Get().Editor,
-				items, func(item *CleanItem) string {
-					return item.Repo.FullName()
-				})
-			if err != nil {
-				return err
-			}
-		}
 
-		showCleanItems(items)
-		term.ConfirmExit("continue")
-
-		for _, item := range items {
-			err := ctx.Data.Store.DeleteAll(item.Repo)
-			if err != nil {
-				return err
-			}
+		err = cleanEmptyDir(ctx)
+		if err != nil {
+			return errors.Trace(err, "clean empty dir")
 		}
 
 		return nil
@@ -171,4 +183,45 @@ func showCleanItems(items []*CleanItem) {
 		}
 		term.Printf("* %s %s", name, view)
 	}
+}
+
+func cleanEmptyDir(ctx *app.Context[CleanFlags, CleanData]) error {
+	var dirs []string
+	err := filepath.WalkDir(config.Get().Workspace, func(path string, _ fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if _, ok := ctx.Data.RepoPaths[path]; ok {
+			return filepath.SkipDir
+		}
+		es, err := os.ReadDir(path)
+		if err != nil {
+			return errors.Trace(err, "read dir")
+		}
+		if len(es) == 0 {
+			dirs = append(dirs, path)
+			return filepath.SkipDir
+		}
+		return nil
+	})
+	if err != nil {
+		return errors.Trace(err, "scan workspace")
+	}
+	if len(dirs) == 0 {
+		return nil
+	}
+
+	for _, dir := range dirs {
+		// Remove should be ok, because we ensured dir is empty above.
+		// In an extreme case, user might create something in dir between
+		// the scan stage and the remove stage, will cause Remove here
+		// failure.
+		err = os.Remove(dir)
+		if err != nil {
+			return errors.Trace(err, "remove empty dir")
+		}
+	}
+	word := english.Plural(len(dirs), "empty dir", "")
+	term.Printf("removed %s", word)
+	return nil
 }
