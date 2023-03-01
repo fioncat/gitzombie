@@ -497,6 +497,10 @@ func (s *RepositoryStorage) GetLocal(remote *Remote, name string) (*Repository, 
 	return repo, nil
 }
 
+func (s *RepositoryStorage) Count() int {
+	return len(s.repos)
+}
+
 func SelectLocalRepository(rootDir, name string) (*Repository, error) {
 	if strings.HasSuffix(name, "/") {
 		searchDir := filepath.Join(rootDir, name)
